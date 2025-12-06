@@ -1,0 +1,272 @@
+PROJECT TOUCHLINE - DEVELOPMENT ROADMAP
+========================================
+
+VISION: Make Football Manager 2026 fully accessible for blind players through
+        comprehensive keyboard navigation, text-to-speech, and screen reader support.
+
+========================================
+PHASE 1: CORE ACCESSIBILITY (MVP)
+Status: ✅ COMPLETED
+========================================
+
+1.1 STARTUP & MAIN MENU ACCESS ✅
+   - Readable main menu options (Career, Load Game, Preferences, Quit)
+   - Keyboard navigation with arrow keys + Enter
+   - Speech narration of focused items
+   Implementation: screens/main_menu_screen.py
+
+1.2 INBOX SCREEN ✅
+   - List navigation via up/down arrows
+   - Read sender, subject, date of emails
+   - Hotkey to read full email content
+   Implementation: screens/inbox_screen.py
+
+1.3 CLUB SELECTION / DATABASE SCREEN ✅
+   - Navigate list of clubs
+   - Read club details (name, league, reputation, finances)
+   - Filter by country and division
+   Implementation: screens/club_selection_screen.py
+
+1.4 TEAM OVERVIEW PAGE ✅
+   - Squad list with player details
+   - Read name, position, rating, age, fitness
+   - Filter by position
+   - Keyboard scroll through squad
+   Implementation: screens/team_overview_screen.py
+
+1.5 MATCH DAY - TEXT COMMENTARY MODE ✅
+   - Real-time commentary narration
+   - Adjustable commentary speed (slow/normal/fast)
+   - Hotkeys for match stats, possession, goals
+   - Navigate through match events
+   Implementation: screens/matchday_screen.py
+
+1.6 TACTICS SCREEN ✅
+   - Navigate formations (4-3-3, 4-4-2, 4-2-3-1, 3-5-2)
+   - Read current formation and players
+   - Change formation via keyboard
+   - Access substitution menu
+   - Player instructions
+   Implementation: screens/tactics_screen.py
+
+1.7 SAVE / LOAD GAME ✅
+   - Navigate list of saved games
+   - Save current state with confirmation
+   - Load saved games
+   - Delete saves
+   Implementation: screens/save_load_screen.py
+
+1.8 CORE FRAMEWORK ✅
+   - Narration engine with pyttsx3
+   - Input handler with hotkey system
+   - Keyboard mapper with multiple presets
+   - Logger utility
+   - Configuration files
+   Implementation: core/ and utils/
+
+========================================
+PHASE 2: QUALITY-OF-LIFE ENHANCEMENTS
+Status: 📋 PLANNED
+Target: v0.5
+========================================
+
+2.1 PLAYER SEARCH & SCOUTING
+   - Search players by name
+   - Filter by attributes (speed, passing, value)
+   - Read shortlist results
+   - Scout reports with accessibility
+
+2.2 TRANSFER MARKET
+   - Browse transfer targets
+   - Read player details and values
+   - Make bids via keyboard
+   - Contract negotiations
+   - Transfer status updates
+
+2.3 TRAINING OVERVIEW
+   - Read team training calendar
+   - Individual player training reports
+   - Assign training focus areas
+   - Monitor player development
+
+2.4 FINANCES & CLUB INFO
+   - Club budget overview
+   - Wage structure
+   - Stadium information
+   - Sponsorship details
+   - Board expectations
+
+2.5 PRESS CONFERENCES
+   - Read press questions
+   - Select responses via hotkeys
+   - View media reaction
+   - Optional auto-response setting
+
+2.6 STAFF MANAGEMENT
+   - Navigate coaching staff
+   - Assign responsibilities
+   - Hire/fire staff members
+   - Staff ratings and feedback
+
+========================================
+PHASE 3: EXTENDED FEATURES
+Status: 🔬 EXPERIMENTAL
+Target: v1.0
+========================================
+
+3.1 SCREEN READER INTEGRATION
+   - Direct NVDA support
+   - JAWS compatibility
+   - Windows UI Automation
+   - Toggle in-game speech on/off
+   - Custom TTS voices (eSpeak, SAPI5)
+
+3.2 AUDIO CUES
+   - Sound effects for goals
+   - Audio notifications for cards
+   - Halftime/fulltime chimes
+   - Vibration/rumble controller support
+   - Spatial audio for match events
+
+3.3 MOD MANAGER UI
+   - External companion app
+   - Text command interface
+   - Web-based remote play option
+   - Cloud save synchronization
+
+3.4 MULTIPLAYER ACCESSIBILITY
+   - Accessible online saves
+   - Keyboard chat system
+   - Synchronized commentary
+   - Co-op manager mode support
+
+3.5 ADVANCED HOTKEY SYSTEM
+   - Fully customizable key mapping
+   - Preset profiles (screen reader, speech-only, hybrid)
+   - Macro support for common actions
+   - Import/export configurations
+   - Per-screen custom bindings
+
+3.6 ADVANCED NAVIGATION
+   - Quick jump menus
+   - Bookmark favorite screens
+   - Navigation history (back/forward)
+   - Screen-to-screen transitions
+   - Breadcrumb navigation
+
+========================================
+TECHNICAL IMPROVEMENTS (ONGOING)
+========================================
+
+- Performance optimization for large datasets
+- Reduce speech latency
+- Improve navigation speed
+- Add caching for frequently accessed data
+- Optimize memory usage
+- Better error handling and recovery
+- Unit tests for all components
+- Integration tests for screen flows
+- User acceptance testing with blind players
+
+========================================
+TESTING & VALIDATION
+========================================
+
+Alpha Testing:
+- Internal testing of core features
+- Screen reader compatibility testing
+- Hotkey conflict resolution
+- Performance benchmarking
+
+Beta Testing:
+- Community testing with blind gamers
+- Accessibility audits
+- Usability studies
+- Feedback integration
+
+Release Candidate:
+- Full feature freeze
+- Bug fixes only
+- Documentation finalization
+- Final accessibility review
+
+========================================
+VERSION MILESTONES
+========================================
+
+v0.1 - MVP Release (CURRENT)
+- Basic navigation + core screens
+- Text-to-speech foundation
+- Essential hotkeys
+- Demo-ready prototypes
+
+v0.5 - Enhanced Edition
+- Player search & scouting
+- Transfer market
+- Training system
+- Financial management
+- Press conferences
+
+v1.0 - Complete Accessible Career Mode
+- Full screen reader integration
+- Audio cues & sound effects
+- Advanced customization
+- Multiplayer support
+- Mod manager
+
+v2.0 - Future Vision
+- AI-powered assistance
+- Voice command input
+- Advanced analytics narration
+- Mobile companion app
+- Community features
+
+========================================
+DOCUMENTATION PRIORITIES
+========================================
+
+- User guide for blind players
+- Screen reader setup instructions
+- Hotkey reference card
+- Video tutorials (with audio description)
+- FAQ for common accessibility issues
+- Developer documentation for extensions
+
+========================================
+COMMUNITY & OUTREACH
+========================================
+
+- Engage with blind gaming communities
+- Partner with accessibility organizations
+- Showcase at gaming accessibility events
+- Create tutorial content on YouTube
+- Build Discord community for support
+- Gather user stories and testimonials
+
+========================================
+LONG-TERM GOALS
+========================================
+
+1. Full game accessibility (100% of FM features)
+2. Official Sports Interactive partnership
+3. Integration into base game
+4. Template for other sports games
+5. Industry standard for accessibility
+6. Award recognition for accessibility innovation
+
+========================================
+NOTES
+========================================
+
+- All features must maintain compatibility with NVDA and JAWS
+- Performance cannot degrade with accessibility features enabled
+- Every interactive element must be keyboard accessible
+- All visual information must have text/audio equivalent
+- User testing with blind players is mandatory before release
+- Documentation must be screen reader friendly
+- Focus on real-world usability over feature count
+
+========================================
+Last Updated: December 2025
+Project Lead: Project Touchline Team
+Status: Active Development
