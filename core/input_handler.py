@@ -93,9 +93,9 @@ class InputHandler:
         Set the current navigation mode.
         
         Args:
-            mode: Navigation mode ('menu', 'list', 'form', 'match')
+            mode: Navigation mode ('menu', 'list', 'form', 'match', 'inbox', 'tactics')
         """
-        valid_modes = ['menu', 'list', 'form', 'match']
+        valid_modes = ['menu', 'list', 'form', 'match', 'inbox', 'tactics']
         if mode in valid_modes:
             self.navigation_mode = mode
             print(f"[InputHandler] Navigation mode set to: {mode}")
