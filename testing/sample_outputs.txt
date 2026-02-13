@@ -1,0 +1,266 @@
+PROJECT TOUCHLINE - SAMPLE OUTPUT FORMATS
+==========================================
+
+This file demonstrates the expected text output and narration formats
+for various screens and interactions in the accessibility framework.
+
+==========================================
+1. MAIN MENU SCREEN
+==========================================
+
+Initial Load:
+"Welcome to Football Manager 2026. Main Menu."
+"Item 1 of 4: Career Mode - Start a new game"
+
+Navigation:
+[User presses Down]
+"Item 2 of 4: Load Game - Continue a saved game"
+
+[User presses Down]
+"Item 3 of 4: Preferences - Adjust settings"
+
+[User presses R to repeat current]
+"Item 3 of 4: Preferences - Adjust settings"
+
+Help:
+[User presses H]
+"Main Menu Help. Use up and down arrows to navigate. Press Enter to select. 
+Press R to read current item. Press H for help. Press Escape to quit."
+
+==========================================
+2. INBOX SCREEN
+==========================================
+
+Initial Load:
+"Inbox. 4 total messages, 3 unread."
+"Email 1 of 4: unread, From Board of Directors, Welcome to the Club, 1 Jan 2026"
+
+Reading Full Email:
+[User presses R or Enter]
+"Email from Board of Directors, dated 1 Jan 2026. Subject: Welcome to the Club. 
+Message: Welcome to your new role as manager. We have high expectations for this season. 
+Please review the squad and make any necessary signings. Good luck!"
+
+Navigation:
+[User presses Down]
+"Email 2 of 4: unread, From Assistant Manager, Squad Training Report, 3 Jan 2026"
+
+==========================================
+3. CLUB SELECTION SCREEN
+==========================================
+
+Initial Load:
+"Club Selection. 12 clubs available."
+"Club 1 of 12: Manchester Rovers, Premier League, England, 
+Reputation: 5 stars, Budget: £150M, Division 1"
+
+Filtering:
+[User presses C for country filter]
+"Filtering by country: England. 4 clubs found."
+"Club 1 of 4: Manchester Rovers, Premier League, England, 
+Reputation: 5 stars, Budget: £150M, Division 1"
+
+[User presses D for division filter]
+"Filtering by division: 2. 2 clubs found."
+"Club 1 of 2: Newcastle City, Championship, England, 
+Reputation: 3 stars, Budget: £20M, Division 2"
+
+[User presses X to clear filters]
+"Filters cleared. 12 clubs available."
+
+Selection:
+[User presses Enter]
+"Selected Manchester Rovers. Starting new career."
+
+==========================================
+4. TEAM OVERVIEW SCREEN
+==========================================
+
+Initial Load:
+"Team Overview. Squad of 15 players."
+"Player 1 of 15: John Smith, GK, ★★★★☆ 4 stars, Age 28, Fitness 95%"
+
+Detailed View:
+[User presses Enter for details]
+"John Smith. Position: GK. Rating: ★★★★☆ 4 stars. Age: 28. 
+Fitness: 95%. Morale: Good. Contract: 3 years remaining."
+
+Position Filter:
+[User presses P]
+"Filtering by position: GK. 2 players found."
+"Player 1 of 2: John Smith, GK, ★★★★☆ 4 stars, Age 28, Fitness 95%"
+
+==========================================
+5. MATCH DAY SCREEN
+==========================================
+
+Match Start:
+"Match Day. Manchester Rovers versus Liverpool United. Press space to pause or resume."
+
+Commentary:
+[User presses C]
+"Good attacking play down the right wing. Cross is cleared."
+
+Possession:
+[User presses P]
+"Possession: Manchester Rovers 55%, Liverpool United 45%"
+
+Full Stats:
+[User presses T]
+"Manchester Rovers 2, Liverpool United 1. Possession: Manchester Rovers 55%, 
+Liverpool United 45%. Shots: Manchester Rovers 12, Liverpool United 8. 
+Shots on target: Manchester Rovers 6, Liverpool United 4."
+
+Last Goal:
+[User presses G]
+"Minute 88: GOAL! Williams with a stunning strike! Manchester Rovers 2-1!"
+
+Event Navigation:
+[User presses Right arrow]
+"Event 5 of 11, Minute 35: Corner kick for Manchester Rovers."
+
+Speed Adjustment:
+[User presses F]
+"Commentary speed: fast"
+
+[User presses S]
+"Commentary speed: normal"
+
+==========================================
+6. TACTICS SCREEN
+==========================================
+
+Initial Load:
+"Tactics screen. Current formation and starting eleven."
+"4-3-3 formation with 10 outfield positions plus goalkeeper"
+"Positions: GK, RB, CB, CB, LB, CM, CM, CM, RW, ST, LW"
+
+Player Navigation:
+"Player 1 of 11: John Smith, GK, ★★★★☆ 4 stars, Age 28, Fitness 95%, Role: Default"
+
+[User presses Down]
+"Player 2 of 11: Mike Jones, DEF, ★★★☆☆ 3 stars, Age 25, Fitness 92%, Role: Default"
+
+Formation Change:
+[User presses F]
+"Formation changed to 4-4-2"
+"4-4-2 formation with 10 outfield positions plus goalkeeper"
+"Positions: GK, RB, CB, CB, LB, RM, CM, CM, LM, ST, ST"
+
+Player Instructions:
+[User presses I]
+"Player instructions for Mike Jones. Current role: Default."
+
+Substitutions:
+[User presses S]
+"Substitution menu. Select a player to substitute."
+
+==========================================
+7. SAVE/LOAD SCREEN
+==========================================
+
+Load Mode:
+"Load Game. 3 saved games available."
+"Save 1 of 3: Career 1 - Season 1, Manchester Rovers, 2025/26, 
+3rd in Premier League, Saved: 15 Jan 2026"
+
+Load Confirmation:
+[User presses Enter]
+"Loading Career 1 - Season 1. Manchester Rovers, 2025/26."
+
+Save Mode:
+"Save Game. Select a save slot or create new save."
+
+Save Confirmation:
+[User presses Enter]
+"Saving game as Career 1 - Season 2. Saved successfully."
+
+Delete:
+[User presses Delete]
+"Delete Career 1 - Season 1? This action cannot be undone. Deleted."
+
+==========================================
+8. HELP MESSAGES
+==========================================
+
+Main Menu Help:
+"Main Menu Help. Use up and down arrows to navigate. Press Enter to select. 
+Press R to read current item. Press H for help. Press Escape to quit."
+
+Inbox Help:
+"Inbox Help. Use up and down arrows to navigate emails. Press Enter or R to read full email. 
+Press Escape to return to main menu. Press H for help."
+
+Match Day Help:
+"Match Day Help. Press Space to pause or resume. Press C for latest commentary. 
+Press P for possession stats. Press T for all match stats. Press G for last goal. 
+Press E for last event. Press F for faster commentary, S for slower. 
+Use left and right arrows to navigate events. Press Escape to return to menu."
+
+Tactics Help:
+"Tactics Screen Help. Use up and down arrows to navigate players. Press F to change formation. 
+Press R to read current formation. Press S for substitution menu. 
+Press I for player instructions. Press Escape to return to menu."
+
+==========================================
+9. ERROR/INFO MESSAGES
+==========================================
+
+No Items Available:
+"No saved games available."
+"No goals scored yet."
+"No commentary available."
+
+Filter Results:
+"0 clubs found with current filters. Try clearing filters."
+
+Navigation Limits:
+"First item in list."
+"Last item in list."
+
+Confirmation Messages:
+"Formation changed successfully."
+"Filters cleared."
+"Narration enabled."
+"Narration disabled."
+"Match paused."
+"Match resumed."
+
+==========================================
+10. ACCESSIBILITY NOTIFICATIONS
+==========================================
+
+Narration Toggle:
+[User presses N]
+"Narration disabled"
+[User presses N again]
+"Narration enabled"
+
+Speech Speed:
+"Commentary speed: slow"
+"Commentary speed: normal"
+"Commentary speed: fast"
+
+Navigation Mode Changes:
+"Navigation mode set to: menu"
+"Navigation mode set to: list"
+"Navigation mode set to: match"
+
+==========================================
+NOTES ON OUTPUT FORMAT
+==========================================
+
+1. All outputs should be clear and concise
+2. Numbers should be spoken naturally ("1 of 4" not "one of four")
+3. Star ratings use both symbols and spoken text for clarity
+4. Context is always provided (screen name, item count, position)
+5. Help text includes all available commands
+6. Confirmations are always provided for actions
+7. Errors are descriptive and suggest solutions
+8. Navigation feedback is immediate
+9. Stats are grouped logically for easy comprehension
+10. Proper punctuation for natural speech pacing
+
+==========================================
+END OF SAMPLE OUTPUTS
+==========================================
