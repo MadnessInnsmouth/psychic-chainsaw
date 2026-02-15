@@ -32,7 +32,11 @@ namespace TouchlineMod.Core
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr LoadLibrary(string lpFileName);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FreeLibrary(IntPtr hModule);
+
         private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
+        private static IntPtr _tolkLibraryHandle = IntPtr.Zero;
 
         /// <summary>
         /// Static constructor to set up DLL search path before any P/Invoke calls.
@@ -52,12 +56,13 @@ namespace TouchlineMod.Core
                     // This is safer and doesn't break loading of other DLLs
                     try
                     {
-                        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+                        // Per Windows documentation: AddDllDirectory must be called before SetDefaultDllDirectories
                         AddDllDirectory(modDirectory);
+                        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
                     }
-                    catch
+                    catch (EntryPointNotFoundException)
                     {
-                        // If AddDllDirectory is not available (older Windows), fall back to SetDllDirectory
+                        // AddDllDirectory is not available on older Windows versions, fall back to SetDllDirectory
                         SetDllDirectory(modDirectory);
                     }
 
@@ -65,8 +70,8 @@ namespace TouchlineMod.Core
                     string tolkPath = Path.Combine(modDirectory, "Tolk.dll");
                     if (File.Exists(tolkPath))
                     {
-                        IntPtr handle = LoadLibrary(tolkPath);
-                        if (handle == IntPtr.Zero)
+                        _tolkLibraryHandle = LoadLibrary(tolkPath);
+                        if (_tolkLibraryHandle == IntPtr.Zero)
                         {
                             int errorCode = Marshal.GetLastWin32Error();
                             Console.WriteLine($"[Touchline] Warning: Failed to pre-load Tolk.dll (error code: {errorCode}). Will attempt standard loading.");
@@ -79,6 +84,25 @@ namespace TouchlineMod.Core
                 // If this fails, we'll fall back to the default DLL search behavior
                 // The Log may not be initialized yet, so we can't log here
                 Console.WriteLine($"[Touchline] Failed to set DLL directory: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Clean up the manually loaded Tolk library handle.
+        /// </summary>
+        private static void CleanupTolkLibrary()
+        {
+            if (_tolkLibraryHandle != IntPtr.Zero)
+            {
+                try
+                {
+                    FreeLibrary(_tolkLibraryHandle);
+                    _tolkLibraryHandle = IntPtr.Zero;
+                }
+                catch (Exception ex)
+                {
+                    Log?.LogWarning($"Failed to free Tolk library: {ex.Message}");
+                }
             }
         }
 
@@ -328,6 +352,7 @@ namespace TouchlineMod.Core
                 _sapiAvailable = false;
             }
 
+            CleanupTolkLibrary();
             _initialized = false;
         }
 
