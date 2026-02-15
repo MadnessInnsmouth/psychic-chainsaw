@@ -1,130 +1,60 @@
-# Project Touchline - Quick Start Guide
+# Touchline Quick Start Guide
 
-Get started with the Football Manager 2026 Accessibility Framework in 5 minutes!
+Get the FM26 accessibility mod running in 5 minutes.
 
-## Installation
+## Prerequisites
 
-### Step 1: Install Python
-Make sure you have Python 3.7 or higher installed:
-```bash
-python --version
-```
+- Football Manager 26 installed
+- [BepInEx 6.x IL2CPP](https://github.com/BepInEx/BepInEx/releases)
+- [NVDA screen reader](https://www.nvaccess.org/)
+- [Tolk.dll](https://github.com/dkager/tolk/releases) (x64)
 
-### Step 2: Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+## Install
 
-The main dependency is `pyttsx3` for text-to-speech. If installation fails, the framework will still work in console-only mode.
+1. **BepInEx**: Extract into your FM26 game folder, run the game once, then close it.
 
-## Running the Demo
+2. **Touchline**: Copy `TouchlineMod.dll` and `Tolk.dll` to:
+   ```
+   <FM26 folder>/BepInEx/plugins/TouchlineMod/
+   ```
 
-### Full Demo (All Screens)
-```bash
-python main.py --demo
-```
+3. **Launch**: Start NVDA, then launch FM26. You should hear "Touchline accessibility mod loaded".
 
-This runs through all accessibility features:
-- Main menu navigation
-- Inbox/email system
-- Club selection
-- Team overview
-- Match day commentary
-- Tactics screen
-- Save/load functionality
+## Controls
 
-### Interactive Demo
-```bash
-python demo.py
-```
-
-Step-by-step interactive demonstration with visual formatting.
-
-### Individual Screen Demos
-```bash
-# Try any of these:
-python screens/main_menu_screen.py
-python screens/inbox_screen.py
-python screens/matchday_screen.py
-python screens/tactics_screen.py
-python screens/club_selection_screen.py
-python screens/team_overview_screen.py
-python screens/save_load_screen.py
-```
-
-## Basic Usage
-
-### Main Menu Navigation
-- **↑/↓**: Navigate menu items
-- **Enter**: Select item
-- **R**: Read current item
-- **H**: Help
-
-### Match Day
-- **Space**: Pause/Resume
-- **C**: Read commentary
-- **P**: Possession stats
-- **T**: All stats
-- **G**: Last goal
-- **←/→**: Navigate events
-
-### General Controls
-- **Escape**: Go back
-- **H**: Help (on any screen)
-- **R**: Read current item
+| Key | Action |
+|-----|--------|
+| Arrow Keys | Navigate UI elements |
+| Enter / Space | Activate element |
+| Ctrl+Shift+W | "Where am I?" |
+| Ctrl+Shift+H | Help |
+| Ctrl+Shift+D | Toggle debug mode |
+| Ctrl+Shift+S | Deep scan UI |
+| Escape | Stop speech |
 
 ## Configuration
 
-### Speech Settings
-Edit `utils/speech_config.ini`:
-```ini
-[speech]
-enabled = true
-rate = 150      # Words per minute
-volume = 1.0    # 0.0 to 1.0
+Edit `BepInEx/config/com.touchline.fm26accessibility.cfg` to adjust speech, navigation, and debug settings.
+
+## Building from Source
+
+```bash
+dotnet build TouchlineMod.sln -c Release
 ```
 
-### Hotkeys
-Edit `utils/hotkeys_config.json` to customize keyboard bindings.
+For full details, see [INSTALL.md](INSTALL.md) and [BUILDING.md](BUILDING.md).
 
-## What's Included?
+## Running the Python Prototype
 
-✅ **7 Accessible Screens**
-- Main Menu
-- Inbox
-- Club Selection
-- Team Overview
-- Match Day
-- Tactics
-- Save/Load
+The `prototype/` directory contains the original proof-of-concept:
 
-✅ **3 Core Components**
-- Text-to-Speech Engine
-- Input Handler
-- Keyboard Mapper
-
-✅ **Full Documentation**
-- README.md - Complete guide
-- roadmap.txt - Development plan
-- sample_outputs.txt - Expected behavior
-
-## Need Help?
-
-- Read the full README.md
-- Check sample_outputs.txt for expected narration
-- Review CONTRIBUTING.md for development info
-- Open an issue on GitHub
-
-## Next Steps
-
-1. Try all the demos
-2. Read the full documentation
-3. Customize hotkeys and speech settings
-4. Provide feedback if you're a blind gamer
-5. Contribute improvements!
+```bash
+cd prototype
+pip install pyttsx3
+python demo.py
+```
 
 ---
 
-**Version**: 0.1 (MVP)  
-**Status**: Core features complete  
-**Goal**: Full Football Manager accessibility for blind players
+**Version**: 0.2.0  
+**Status**: BepInEx plugin ready for testing

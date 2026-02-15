@@ -1,16 +1,32 @@
-# Python
+# C# / .NET
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+packages/
+*.nuget.props
+*.nuget.targets
+project.assets.json
+project.nuget.cache
+
+# Python (prototype)
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -19,8 +35,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual Environment
 venv/
 ENV/
 env/
@@ -32,7 +46,7 @@ env/
 *.swp
 *.swo
 *~
-.DS_Store
+.vs/
 
 # Logs
 logs/
@@ -56,6 +70,10 @@ temp/
 # OS
 Thumbs.db
 .DS_Store
+
+# Game-specific libraries (user must provide)
+libs/stubs/
+libs/*.dll
 
 # Project specific
 testing/*.fm

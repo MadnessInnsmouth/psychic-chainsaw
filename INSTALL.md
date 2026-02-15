@@ -1,0 +1,113 @@
+# Installing Touchline - FM26 Accessibility Mod
+
+## Prerequisites
+
+- **Football Manager 26** (Steam or Epic Games)
+- **BepInEx 6.x** for Unity IL2CPP
+- **NVDA screen reader** (recommended) or **JAWS**
+- **Tolk.dll** (for screen reader integration)
+
+## Step 1: Install BepInEx
+
+1. Download **BepInEx 6.x IL2CPP** from:
+   - [BepInEx GitHub Releases](https://github.com/BepInEx/BepInEx/releases) (choose the `BepInEx_UnityIL2CPP_x64` package)
+   - Or [Thunderstore BepInExPack for FM26](https://thunderstore.io/c/football-manager-26/p/BepInEx/BepInExPack_FootballManager26/)
+
+2. Extract the contents into your FM26 game folder:
+   ```
+   C:\Program Files (x86)\Steam\steamapps\common\Football Manager 26\
+   ```
+   After extraction, you should see a `BepInEx` folder alongside `Football Manager 26.exe`.
+
+3. **Run the game once** and then close it. This generates the BepInEx configuration
+   and interop assemblies needed by mods.
+
+4. Verify that `BepInEx/interop/` contains `.dll` files (these are auto-generated).
+
+## Step 2: Install Tolk (Screen Reader Library)
+
+1. Download Tolk from: https://github.com/dkager/tolk/releases
+2. Extract `Tolk.dll` (the **x64** version) from the archive.
+3. Place `Tolk.dll` in:
+   ```
+   <FM26 folder>\BepInEx\plugins\TouchlineMod\Tolk.dll
+   ```
+
+## Step 3: Install Touchline
+
+### Option A: Download Release (Recommended)
+
+1. Download `TouchlineMod.dll` from the [Releases page](../../releases).
+2. Create the plugin folder:
+   ```
+   <FM26 folder>\BepInEx\plugins\TouchlineMod\
+   ```
+3. Copy `TouchlineMod.dll` into that folder.
+
+### Option B: Build from Source
+
+See [BUILDING.md](BUILDING.md) for instructions.
+
+## Step 4: Launch and Verify
+
+1. Start your **NVDA** (or JAWS) screen reader.
+2. Launch **Football Manager 26**.
+3. You should hear "Touchline accessibility mod loaded" when the game starts.
+4. After a few seconds, the mod begins tracking UI focus.
+
+## Keyboard Shortcuts
+
+### Mod Controls
+
+| Key Combination | Action |
+|----------------|--------|
+| **Ctrl+Shift+D** | Toggle debug mode |
+| **Ctrl+Shift+S** | Deep scan UI (saves to `TouchlineUIScan.txt`) |
+| **Ctrl+Shift+W** | "Where am I?" - Announce current focus |
+| **Ctrl+Shift+H** | Announce help / keyboard shortcuts |
+| **Escape** | Stop speech |
+
+### Game Navigation
+
+The mod works with FM26's built-in keyboard navigation:
+
+| Key | Action |
+|-----|--------|
+| **Arrow Keys** | Navigate between UI elements |
+| **Enter / Space** | Activate the focused element |
+| **Tab** | Move to next element |
+| **Shift+Tab** | Move to previous element |
+
+## Configuration
+
+After first run, a config file is created at:
+```
+<FM26 folder>\BepInEx\config\com.touchline.fm26accessibility.cfg
+```
+
+You can edit this file to customize:
+- **Speech**: Enable/disable speech, interrupt behavior, element type/state announcements
+- **Navigation**: Auto-read on focus, table headers, row reading, focus delay
+- **Debug**: Debug mode, UI hierarchy logging
+
+## Troubleshooting
+
+### No speech output
+- Ensure NVDA (or JAWS) is running before launching the game.
+- Verify `Tolk.dll` (x64) is in the plugin folder.
+- Check `BepInEx/LogOutput.log` for error messages from Touchline.
+
+### Mod not loading
+- Verify BepInEx is installed correctly (look for `BepInEx/LogOutput.log` after launching).
+- Make sure `TouchlineMod.dll` is in `BepInEx/plugins/TouchlineMod/`.
+- Check the BepInEx log for loading errors.
+
+### Focus not tracked
+- FM26's keyboard navigation must be active (use Tab/arrows to navigate).
+- Try pressing Ctrl+Shift+W to check if the mod detects the current focus.
+- Run Ctrl+Shift+S to deep-scan the UI and check `TouchlineUIScan.txt`.
+
+## Uninstalling
+
+1. Delete the `BepInEx/plugins/TouchlineMod/` folder.
+2. Optionally delete the config: `BepInEx/config/com.touchline.fm26accessibility.cfg`.

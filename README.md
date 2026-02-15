@@ -1,263 +1,162 @@
-# Project Touchline
+# Touchline - FM26 Accessibility Mod
 
-**Making Football Manager 2026 Fully Accessible for Blind Players**
+**A BepInEx plugin that makes Football Manager 2026 accessible for blind and visually impaired players via screen readers.**
 
-Project Touchline is an accessibility framework designed to make Football Manager 2026 playable for blind and visually impaired users through NVDA/JAWS screen readers or custom speech/keyboard-based interfaces.
+Touchline hooks into FM26's Unity-based UI to provide real-time screen reader output (NVDA, JAWS) and enhanced keyboard navigation. It uses the game's built-in keyboard navigation system to announce focused elements, read table data, and narrate screen transitions.
 
-## 🎯 Project Goal
+## Features
 
-Enable blind players to fully experience Football Manager 2026 through:
-- Text-to-speech narration of all game elements
-- Comprehensive keyboard navigation
-- Audio cues and feedback
-- Screen reader integration (NVDA/JAWS)
+- **Focus-based announcements** — Automatically speaks the name, type, and state of the currently focused UI element
+- **Table support** — Reads column headers and full row data when navigating tables
+- **Element state** — Announces checked/unchecked, selected, disabled states
+- **Screen transitions** — Announces when you navigate to a new screen
+- **Rich text cleanup** — Strips Unity markup tags for clean screen reader output
+- **UI deep scanner** — Debug tool that catalogs the entire UI hierarchy to a file
+- **Configurable** — All features can be toggled via BepInEx configuration
+- **Dual TTS backend** — Tolk (NVDA/JAWS) with Windows SAPI fallback
 
-## ✨ Features (Phase 1 - MVP)
+## Requirements
 
-### Core Accessibility Components
+- Football Manager 26 (Unity IL2CPP)
+- [BepInEx 6.x for Unity IL2CPP](https://github.com/BepInEx/BepInEx)
+- [NVDA](https://www.nvaccess.org/) or JAWS screen reader
+- [Tolk](https://github.com/dkager/tolk/releases) screen reader library
 
-1. **Main Menu Access**
-   - Keyboard-navigable menu (Career, Load Game, Preferences, Quit)
-   - Speech narration of focused items
-   - Arrow key navigation + Enter to select
+## Quick Start
 
-2. **Inbox Screen**
-   - Navigate emails with up/down arrows
-   - Read sender, subject, date, and content
-   - Hotkey to read full email content
+1. Install BepInEx 6.x in your FM26 game folder
+2. Run the game once to generate interop assemblies
+3. Download `TouchlineMod.dll` from [Releases](../../releases) and `Tolk.dll` from the Tolk project
+4. Place both in `<FM26 folder>/BepInEx/plugins/TouchlineMod/`
+5. Start NVDA, then launch FM26
+6. You should hear "Touchline accessibility mod loaded"
 
-3. **Club Selection**
-   - Browse clubs with keyboard
-   - Filter by country and division
-   - Read club details (name, league, reputation, finances)
+See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
-4. **Team Overview**
-   - Squad list navigation
-   - Read player details (name, position, rating, age, fitness)
-   - Filter players by position
+## Keyboard Shortcuts
 
-5. **Match Day - Text Commentary**
-   - Real-time text commentary with speech
-   - Adjustable commentary speed
-   - Hotkeys for match stats, possession, goals
-   - Navigate through match events
+| Key Combination | Action |
+|----------------|--------|
+| Ctrl+Shift+D | Toggle debug mode |
+| Ctrl+Shift+S | Deep scan UI (saves TouchlineUIScan.txt) |
+| Ctrl+Shift+W | "Where am I?" — Announce current focus |
+| Ctrl+Shift+H | Help — List all shortcuts |
+| Escape | Stop speech |
+| Arrow Keys | Navigate (uses FM26's built-in nav) |
+| Enter / Space | Activate focused element |
 
-6. **Tactics Screen**
-   - Navigate formations and players
-   - Change formations via keyboard
-   - Assign players to positions
-   - Substitution menu access
+## Configuration
 
-7. **Save/Load Game**
-   - Navigate saved games list
-   - Save and load with keyboard
-   - Confirmation messages
-
-## 🚀 Quick Start
-
-### Requirements
-
-- Python 3.7 or higher
-- pyttsx3 (for text-to-speech)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/MadnessInnsmouth/psychic-chainsaw.git
-cd psychic-chainsaw
-
-# Install dependencies
-pip install pyttsx3
-```
-
-### Running Demo Screens
-
-Each screen module can be run independently for testing:
-
-```bash
-# Main menu demo
-python screens/main_menu_screen.py
-
-# Inbox demo
-python screens/inbox_screen.py
-
-# Match day demo
-python screens/matchday_screen.py
-
-# Tactics demo
-python screens/tactics_screen.py
-
-# Club selection demo
-python screens/club_selection_screen.py
-
-# Team overview demo
-python screens/team_overview_screen.py
-
-# Save/Load demo
-python screens/save_load_screen.py
-```
-
-## 📁 Project Structure
-
-```
-project-touchline/
-├── core/
-│   ├── narration_engine.py      # Text-to-speech engine
-│   ├── input_handler.py         # Keyboard input management
-│   └── keyboard_mapper.py       # Hotkey configuration
-├── screens/
-│   ├── main_menu_screen.py      # Main menu navigation
-│   ├── inbox_screen.py          # Email/inbox system
-│   ├── matchday_screen.py       # Match commentary & stats
-│   ├── tactics_screen.py        # Formation & tactics
-│   ├── club_selection_screen.py # Club database
-│   ├── team_overview_screen.py  # Squad management
-│   └── save_load_screen.py      # Save/load games
-├── utils/
-│   ├── logger.py                # Logging system
-│   ├── hotkeys_config.json      # Hotkey mappings
-│   └── speech_config.ini        # TTS configuration
-├── testing/
-│   └── sample_outputs.txt       # Example outputs
-├── README.md
-└── roadmap.txt
-```
-
-## ⌨️ Default Hotkeys
-
-### General Navigation
-- **Arrow Keys**: Navigate items/menus
-- **Enter**: Select/Confirm
-- **Escape**: Back/Cancel
-- **R**: Read current item
-- **H**: Help/Show available commands
-- **Space**: Toggle/Pause (context-dependent)
-
-### Match Day Specific
-- **C**: Read latest commentary
-- **P**: Read possession stats
-- **T**: Read all match stats
-- **G**: Read last goal
-- **E**: Read last event
-- **F**: Faster commentary
-- **S**: Slower commentary
-- **Left/Right**: Navigate through events
-
-### Tactics Screen
-- **F**: Change formation
-- **R**: Read current formation
-- **S**: Substitution menu
-- **I**: Player instructions
-
-### Filtering (Club/Team screens)
-- **P**: Filter by position (team overview)
-- **C**: Filter by country (club selection)
-- **D**: Filter by division (club selection)
-- **X**: Clear filters
-
-## 🔧 Configuration
-
-### Speech Settings
-
-Edit `utils/speech_config.ini`:
+After first run, edit `BepInEx/config/com.touchline.fm26accessibility.cfg`:
 
 ```ini
-[speech]
-enabled = true
-rate = 150          # Words per minute (100-300)
-volume = 1.0        # Volume (0.0-1.0)
-voice =             # Leave empty for default
+[Speech]
+Enabled = true
+InterruptOnNew = true
+AnnounceElementType = true
+AnnounceElementState = true
+
+[Navigation]
+AutoReadOnFocus = true
+AnnounceTableHeaders = true
+ReadFullTableRow = true
+FocusChangeDelay = 0.1
+
+[Debug]
+DebugMode = false
+LogUIHierarchy = false
 ```
 
-### Hotkey Customization
+## Building from Source
 
-Edit `utils/hotkeys_config.json` to customize keyboard bindings for different screens.
+Requires [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0) or later.
 
-## 🎮 Usage Examples
+```bash
+git clone https://github.com/MadnessInnsmouth/psychic-chainsaw.git
+cd psychic-chainsaw
+dotnet build TouchlineMod.sln -c Release
+```
 
-### Starting a Career
+For a full build against the game's assemblies, set `FM26_PATH`:
 
-1. Run the main menu
-2. Navigate with arrow keys to "Career Mode"
-3. Press Enter to select
-4. Choose a club from the database
-5. Press Enter to start
+```bash
+export FM26_PATH="/path/to/Football Manager 26"
+dotnet build TouchlineMod.sln -c Release
+```
 
-### Reading Match Commentary
+See [BUILDING.md](BUILDING.md) for complete build instructions.
 
-1. During a match, press **C** for latest commentary
-2. Press **T** for full match statistics
-3. Press **G** to hear details of the last goal
-4. Use **Left/Right arrows** to browse through events
+## Project Structure
 
-### Managing Squad
+```
+psychic-chainsaw/
+├── src/TouchlineMod/           # C# BepInEx plugin (the actual mod)
+│   ├── Plugin.cs               # BepInEx entry point
+│   ├── Core/                   # Speech output, text cleaning, manager
+│   ├── Navigation/             # Focus tracking, accessible elements
+│   ├── UI/                     # UI scanning, text extraction
+│   ├── Patches/                # Harmony patches for FM26 events
+│   └── Config/                 # BepInEx configuration
+├── prototype/                  # Original Python proof-of-concept
+│   ├── core/                   # Python TTS & input handling
+│   ├── screens/                # Simulated FM26 screens
+│   └── utils/                  # Configuration & logging
+├── libs/                       # Game library reference info
+├── TouchlineMod.sln            # .NET solution file
+├── INSTALL.md                  # Installation guide
+├── BUILDING.md                 # Build from source guide
+└── README.md                   # This file
+```
 
-1. Access Team Overview from main menu
-2. Use **Up/Down** arrows to browse players
-3. Press **Enter** for detailed player information
-4. Press **P** to filter by position
+## How It Works
 
-## 📊 Accessibility Features
+Touchline monitors FM26's `FMNavigationManager.CurrentFocus` property to detect when the player navigates to a new UI element via keyboard. When focus changes:
 
-- **Full Keyboard Navigation**: No mouse required
-- **Text-to-Speech**: All interface elements are narrated
-- **Adjustable Speech Speed**: Customize reading speed to preference
-- **Audio Cues**: Important events announced with audio feedback
-- **Context-Sensitive Help**: Press H on any screen for available commands
-- **Filter & Search**: Quickly find specific items (clubs, players, saves)
+1. **FocusTracker** detects the new focused `GameObject`
+2. **TextExtractor** reads text from Unity UI components (Text, TextMeshPro, FM custom labels)
+3. **TextCleaner** strips rich text markup for clean output
+4. **AccessibleElement** builds a structured announcement (name, type, state, position)
+5. **SpeechOutput** sends the announcement to NVDA/JAWS via Tolk, or to Windows SAPI
 
-## 🗺️ Development Roadmap
+This approach leverages the game's existing keyboard navigation rather than implementing custom navigation, ensuring compatibility with game updates.
 
-### Phase 1: Core Accessibility (MVP) ✅
-- Main menu navigation
-- Inbox/email system
-- Club selection
-- Team overview
-- Match day commentary
-- Tactics screen
-- Save/load functionality
+## Roadmap
 
-### Phase 2: Quality-of-Life Enhancements (Planned)
-- Player search & scouting
-- Transfer market
-- Training overview
-- Finances & club info
-- Press conferences
+- [x] Core plugin architecture (BepInEx 6, Harmony, IL2CPP)
+- [x] Speech output (Tolk + SAPI fallback)
+- [x] Focus tracking and announcements
+- [x] Table header and row reading
+- [x] UI deep scanner for debugging
+- [x] Configurable via BepInEx config
+- [ ] Match day live commentary narration
+- [ ] Tactics screen enhanced navigation
+- [ ] Transfer market accessibility
+- [ ] Audio cues for key events
+- [ ] Braille display output via Tolk
 
-### Phase 3: Extended Features (Experimental)
-- NVDA/JAWS direct integration
-- Audio cues & sound effects
-- Mod manager UI
-- Multiplayer accessibility
-- Custom hotkey mapping system
+## Prototype
 
-## 🤝 Contributing
+The `prototype/` directory contains the original Python proof-of-concept that simulates FM26 screens with pyttsx3 text-to-speech. It was used to validate the accessibility design before building the real BepInEx mod. To run it:
 
-Contributions are welcome! Areas where help is needed:
+```bash
+cd prototype
+pip install pyttsx3
+python demo.py
+```
 
-- Testing with real screen readers (NVDA, JAWS)
-- Additional accessibility features
-- Bug fixes and improvements
-- Documentation enhancements
-- User experience feedback from blind users
+## Acknowledgments
 
-## 📝 License
+- [BepInEx](https://github.com/BepInEx/BepInEx) — Unity modding framework
+- [Tolk](https://github.com/dkager/tolk) — Screen reader abstraction library
+- [HarmonyX](https://github.com/BepInEx/HarmonyX) — Runtime method patching
+- The FM modding community for documenting FM26's UI internals
 
-This project is open source and available for use in making games more accessible.
+## License
 
-## 🙏 Acknowledgments
-
-Project Touchline is dedicated to making gaming accessible to everyone, regardless of visual ability.
-
-## 📞 Contact & Support
-
-For questions, feedback, or support:
-- Open an issue on GitHub
-- Contribute improvements via pull requests
+MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Version**: 0.1 (MVP)  
-**Status**: Core functionality implemented  
-**Last Updated**: December 2025
+**Version**: 0.2.0  
+**Status**: BepInEx plugin — ready for testing with FM26  
+**Last Updated**: February 2026
