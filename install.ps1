@@ -728,6 +728,11 @@ Write-Log "=== INSTALLATION COMPLETED ===" "INFO"
     Write-Host "   Full error details have been logged to:" -ForegroundColor Yellow
     Write-Host "   $LogFile" -ForegroundColor White
     Write-Host ""
+    Write-Host "   Next steps:" -ForegroundColor Cyan
+    Write-Host "   1. Check the log file for detailed error information" -ForegroundColor Gray
+    Write-Host "   2. See INSTALL.md for troubleshooting guidance" -ForegroundColor Gray
+    Write-Host "   3. Report issues at: https://github.com/MadnessInnsmouth/psychic-chainsaw/issues" -ForegroundColor Gray
+    Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -755,13 +760,12 @@ if ($allGood) {
     Write-Host "  Installation incomplete - see errors above." -ForegroundColor Yellow
     Write-Host "  Fix the issues and run this installer again." -ForegroundColor Yellow
     Write-Log "Installation completed with errors" "WARN"
+    Write-Host ""
+    Write-Host "  Troubleshooting:" -ForegroundColor Cyan
+    Write-Host "  - Installation log saved to: $LogFile" -ForegroundColor White
+    Write-Host "  - Share the log file contents when reporting issues" -ForegroundColor Gray
+    Write-Host "  - See INSTALL.md for common solutions" -ForegroundColor Gray
 }
 
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Installation log saved to:" -ForegroundColor Cyan
-Write-Host "  $LogFile" -ForegroundColor White
-Write-Host ""
-Write-Host "  If you encounter issues, please share the log file contents" -ForegroundColor Gray
-Write-Host "  to help diagnose the problem." -ForegroundColor Gray
 Write-Host ""
