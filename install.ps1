@@ -48,7 +48,7 @@ Add-Content -Path $LogFile -Value $logHeader -ErrorAction SilentlyContinue
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "HH:mm:ss"
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] [$Level] $Message"
     Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
 }
