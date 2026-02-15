@@ -4,14 +4,16 @@
 
 The easiest way to install Touchline is the one-click installer:
 
-1. Download the latest release from [Releases](../../releases) or clone the repository
-2. **Double-click `install.bat`** — that's it!
+1. Download the latest release ZIP from [Releases](../../releases)
+2. **Extract the ZIP** to any folder on your computer (e.g. your Desktop or Downloads)
+3. **Double-click `install.bat`** inside the extracted folder — that's it!
+
+> **Important**: You must extract the ZIP first. The installer cannot run from inside a ZIP file. Right-click the ZIP and choose "Extract All", then open the extracted folder and double-click `install.bat`.
 
 The installer automatically:
 - Finds your Football Manager 2026 installation (Steam, Epic Games, or Xbox Game Pass)
-- **Searches your computer for existing BepInEx installations** (checks all drives and common locations)
-- **Searches for Tolk DLLs on your system** (in Downloads, Program Files, and other common locations)
-- Downloads any missing files from the internet only if not found locally
+- Uses the DLL files bundled in the extracted installer folder (Tolk.dll, TouchlineMod.dll, etc.)
+- Downloads any missing files from the internet only if not found in the installer folder
 - Installs BepInEx 6 (the mod framework)
 - Installs Tolk (screen reader bridge for NVDA/JAWS)
 - Installs the Touchline accessibility mod
@@ -21,24 +23,25 @@ After installation:
 2. Launch **Football Manager 2026**
 3. You should hear "Touchline accessibility mod loaded"
 
+> **Note**: On the very first launch after installing BepInEx, the game will start and then **shut down automatically**. This is normal — BepInEx needs to generate interop assemblies. Simply launch the game again and it will work normally.
+
 > **Note**: If the installer can't find FM26 automatically, it will ask you to enter the path.
 
 ## Offline Installation
 
-The installer is designed to work **completely offline** if you already have the required files:
+The installer is designed to work **completely offline** if you have the bundled installer package:
 
-### What the installer searches for:
-- **BepInEx**: Searches all fixed drives, Program Files, common game directories
-- **Tolk DLLs**: Searches Downloads folder, script directory, all drives
-- **TouchlineMod.dll**: Searches locally built versions, script directory, and your system
+### What's included in the installer ZIP:
+- **install.bat** / **install.ps1** — Installer scripts
+- **TouchlineMod.dll** — The accessibility mod
+- **tolk-x64.zip** — Screen reader library bundle (Tolk.dll + companion DLLs)
 
-### To prepare for offline installation:
-1. Download the required files once (from another computer if needed)
-2. Place them anywhere on your computer:
-   - Put BepInEx zip in your Downloads folder or script directory
-   - Put tolk-x64.zip or extracted DLLs in Downloads or script directory
-   - The installer will find them automatically
-3. Run `install.bat` - it will use the local files instead of downloading
+### To install offline:
+1. Extract the installer ZIP to any folder
+2. Ensure the bundled files (TouchlineMod.dll, tolk-x64.zip) are in the same folder as install.bat
+3. Run `install.bat` — the installer uses the files from its own folder first
+
+> **Note**: The installer only searches its own folder for DLL files. It does **not** scan your entire system.
 
 ### Creating a bundled installer:
 Run `package-installer.ps1` to create a single ZIP containing everything:
@@ -150,6 +153,11 @@ You can edit this file to customize:
 - **Debug**: Debug mode, UI hierarchy logging
 
 ## Troubleshooting
+
+### Game starts but closes immediately
+- **On the very first launch after installing BepInEx**, the game will start and then shut down automatically. This is expected — BepInEx generates interop assemblies on the first run and the game exits during this process. Simply launch the game again.
+- If it keeps closing after the first run, check `BepInEx/LogOutput.log` for errors.
+- Make sure you're using the correct BepInEx version (Unity IL2CPP x64).
 
 ### No speech output
 - Ensure NVDA (or JAWS) is running before launching the game.
