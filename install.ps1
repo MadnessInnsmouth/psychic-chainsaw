@@ -21,6 +21,29 @@ $ProgressPreference = "SilentlyContinue"  # Speed up Invoke-WebRequest
 # --- Script Configuration ---
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# --- Auto-extract bundled zip if present ---
+# If the user downloaded the distribution zip but only extracted install.bat/ps1 without
+# extracting the rest, look for the Touchline zip alongside the installer and extract it.
+$touchlineZips = @(
+    (Join-Path $ScriptDir "Touchline-FM26-Installer.zip"),
+    (Join-Path $ScriptDir "Touchline-FM26-Installer-Complete.zip"),
+    (Join-Path $ScriptDir "Touchline-FM26-Installer-Full.zip")
+)
+foreach ($zipFile in $touchlineZips) {
+    if (Test-Path $zipFile) {
+        # Only extract if the bundled files are missing (e.g. tolk-x64.zip or TouchlineMod.dll)
+        $hasTolkZip = Test-Path (Join-Path $ScriptDir "tolk-x64.zip")
+        $hasTolkDir = Test-Path (Join-Path $ScriptDir "tolk-x64")
+        $hasModDll  = Test-Path (Join-Path $ScriptDir "TouchlineMod.dll")
+        if (-not $hasTolkZip -and -not $hasTolkDir -and -not $hasModDll) {
+            Write-Host "   Extracting bundled files from $([IO.Path]::GetFileName($zipFile))..." -ForegroundColor White
+            Expand-Archive -Path $zipFile -DestinationPath $ScriptDir -Force
+            Write-Host "   [OK] Bundled files extracted" -ForegroundColor Green
+        }
+        break
+    }
+}
+
 # --- Version Configuration ---
 $BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
@@ -44,95 +67,26 @@ function Find-DllOnSystem {
         [string[]]$AdditionalSearchPaths = @()
     )
     
-    Write-Host "   Searching for $DllName on local system..." -ForegroundColor Gray
+    Write-Host "   Searching for $DllName in installer directory..." -ForegroundColor Gray
     
-    # Build comprehensive search path list
-    $searchPaths = @()
-    
-    # Current directory and subdirectories
-    if ($ScriptDir) {
-        $searchPaths += $ScriptDir
-        $searchPaths += Join-Path $ScriptDir "libs"
-        $searchPaths += Join-Path $ScriptDir "tolk-x64"
-        $searchPaths += Join-Path $ScriptDir "BepInEx"
-    }
-    
-    # User's Downloads folder
-    $searchPaths += "$env:USERPROFILE\Downloads"
-    $searchPaths += "$env:USERPROFILE\Downloads\tolk-x64"
-    
-    # Common installation directories
-    $searchPaths += "$env:ProgramFiles\BepInEx"
-    $searchPaths += "$env:ProgramFiles (x86)\BepInEx"
-    $searchPaths += "C:\BepInEx"
-    
-    # Add any additional paths provided
-    $searchPaths += $AdditionalSearchPaths
-    
-    # Search in all existing paths (shallow search first)
-    foreach ($path in $searchPaths) {
-        if (Test-Path $path) {
-            $found = Get-ChildItem -Path $path -Filter $DllName -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($found) {
-                Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
-                return $found.FullName
-            }
+    # Only search within the installer's own directory and its subdirectories.
+    # The distribution zip includes a subfolder (e.g. tolk-x64) with the required DLLs,
+    # so a recursive search of the script directory is sufficient.
+    if ($ScriptDir -and (Test-Path $ScriptDir)) {
+        $found = Get-ChildItem -Path $ScriptDir -Filter $DllName -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($found) {
+            Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
+            return $found.FullName
         }
     }
     
-    # Deep search in common directories (slower, but more thorough)
-    $deepSearchRoots = @(
-        "$env:USERPROFILE\Downloads",
-        "$env:USERPROFILE\Documents"
-    )
-    
-    # Exclusion pattern for filtering out system and irrelevant directories
-    $excludePattern = '\\Windows\\|\\node_modules\\|\\\.git\\|\\AppData\\Roaming\\|\\System32\\'
-    
-    foreach ($root in $deepSearchRoots) {
-        if (Test-Path $root) {
-            $found = Get-ChildItem -Path $root -Filter $DllName -Recurse -Depth 3 -ErrorAction SilentlyContinue | 
-                     Where-Object { $_.FullName -notmatch $excludePattern } |
-                     Select-Object -First 1
+    # Also check any additional paths explicitly provided by the caller
+    foreach ($path in $AdditionalSearchPaths) {
+        if ($path -and (Test-Path $path)) {
+            $found = Get-ChildItem -Path $path -Filter $DllName -Recurse -Depth 2 -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found) {
                 Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
                 return $found.FullName
-            }
-        }
-    }
-    
-    # Search all local fixed drives (C:, D:, E:, etc.) - only if not found yet
-    # Only search local fixed drives to avoid slow network drives
-    Write-Host "   Performing system-wide search on local drives (this may take a moment)..." -ForegroundColor Gray
-    $drives = Get-PSDrive -PSProvider FileSystem | 
-              Where-Object { $_.Used -gt 0 -and $_.Free -gt 0 } |
-              Where-Object { 
-                  # Verify it's a local drive by checking if root is accessible quickly
-                  $testPath = "$($_.Name):\"
-                  (Test-Path $testPath -ErrorAction SilentlyContinue) -and 
-                  ($testPath -notmatch '^\\\\')  # Exclude UNC paths
-              }
-    
-    foreach ($drive in $drives) {
-        $driveRoot = "$($drive.Name):\"
-        
-        # Search common subdirectories first
-        $commonPaths = @(
-            "$driveRoot\BepInEx",
-            "$driveRoot\Games",
-            "$driveRoot\Program Files",
-            "$driveRoot\Program Files (x86)"
-        )
-        
-        foreach ($commonPath in $commonPaths) {
-            if (Test-Path $commonPath) {
-                $found = Get-ChildItem -Path $commonPath -Filter $DllName -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-                         Where-Object { $_.FullName -notmatch $excludePattern } |
-                         Select-Object -First 1
-                if ($found) {
-                    Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
-                    return $found.FullName
-                }
             }
         }
     }
@@ -380,19 +334,40 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
     Write-Ok "Interop assemblies already generated"
 } else {
     Write-Host "   BepInEx needs to run once to generate interop assemblies." -ForegroundColor White
-    Write-Host "   The game will launch briefly and then you should close it." -ForegroundColor White
+    Write-Host "   The game will launch, generate files, and may close on its own." -ForegroundColor White
+    Write-Host "   NOTE: It is normal for the game to start and then shut down automatically" -ForegroundColor Yellow
+    Write-Host "         on the first run. BepInEx must generate interop assemblies and the" -ForegroundColor Yellow
+    Write-Host "         game will exit during this process. This is expected behaviour." -ForegroundColor Yellow
     Write-Host ""
 
     $gameExe = Get-ChildItem "$FM26Path\*.exe" | Where-Object { $_.Name -notlike "Unins*" -and $_.Name -notlike "crash*" } | Select-Object -First 1
     if ($gameExe) {
-        Write-Host "   Press Enter to launch FM26 (close it once you see the main menu)..." -ForegroundColor Yellow
+        Write-Host "   Press Enter to launch FM26..." -ForegroundColor Yellow
         Read-Host
 
-        Start-Process $gameExe.FullName -WorkingDirectory $FM26Path
-        Write-Host "   Waiting for game to generate assemblies (this may take 30-60 seconds)..." -ForegroundColor Gray
-        Write-Host "   Close the game when you see the main menu or title screen." -ForegroundColor Gray
-        Write-Host ""
-        Read-Host "   Press Enter after you've closed the game"
+        $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru
+        Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
+        Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
+
+        # Wait for the game process to exit (up to 120 seconds)
+        $exited = $gameProcess.WaitForExit(120000)
+        if (-not $exited) {
+            Write-Host "   Game is still running. Please close it when ready." -ForegroundColor Yellow
+            Read-Host "   Press Enter after you've closed the game"
+        } else {
+            Write-Host "   Game process has exited." -ForegroundColor Gray
+            # Give BepInEx a moment to finish writing interop files
+            Start-Sleep -Seconds 3
+        }
+
+        # Verify interop assemblies were generated
+        if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+            Write-Ok "Interop assemblies generated successfully"
+        } else {
+            Write-Warn "Interop assemblies not found after game run."
+            Write-Host "   This can happen if BepInEx didn't fully initialise." -ForegroundColor Yellow
+            Write-Host "   Try launching FM26 once more from Steam, let it close, then re-run this installer." -ForegroundColor Yellow
+        }
     } else {
         Write-Warn "Could not find game executable. Please run FM26 once manually, then re-run this installer."
     }
@@ -414,8 +389,8 @@ if (Test-Path $tolkDll) {
 } else {
     $tolkInstalled = $false
 
-    # --- Strategy 1: Search for Tolk DLLs on the local system ---
-    Write-Host "   Searching for Tolk DLLs on local system..." -ForegroundColor White
+    # --- Strategy 1: Search for Tolk DLLs bundled with the installer ---
+    Write-Host "   Searching for Tolk DLLs in installer directory..." -ForegroundColor White
     $localTolkDll = Find-DllOnSystem -DllName "Tolk.dll"
     if ($localTolkDll) {
         $localTolkDir = Split-Path -Parent $localTolkDll
@@ -430,7 +405,7 @@ if (Test-Path $tolkDll) {
         }
         
         if ($copiedCount -gt 0) {
-            Write-Ok "Tolk installed from local system ($copiedCount DLL(s) copied)"
+            Write-Ok "Tolk installed from installer directory ($copiedCount DLL(s) copied)"
             $tolkInstalled = $true
         }
     }
@@ -533,13 +508,13 @@ Write-Step "Installing Touchline accessibility mod..."
 $modDll = Join-Path $pluginDir "TouchlineMod.dll"
 $downloadedMod = $false
 
-# --- Strategy 1: Search for TouchlineMod.dll on local system ---
+# --- Strategy 1: Search for TouchlineMod.dll in installer directory ---
 if (-not (Test-Path $modDll)) {
     $localModDll = Find-DllOnSystem -DllName "TouchlineMod.dll"
     if ($localModDll) {
         Write-Host "   Found TouchlineMod.dll at: $localModDll" -ForegroundColor Gray
         Copy-Item $localModDll -Destination $modDll -Force
-        Write-Ok "Installed TouchlineMod.dll from local system"
+        Write-Ok "Installed TouchlineMod.dll from installer directory"
         $downloadedMod = $true
     }
 }

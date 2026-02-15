@@ -126,21 +126,20 @@ This guide explains the different ways to distribute the Touchline mod installer
 
 ### How the Installer Handles Bundled Files
 
-The improved installer uses a **multi-strategy approach**:
+The improved installer uses a **local-first approach**:
 
 ```
 For each required component:
   1. Check if already installed in target location → DONE
-  2. Search entire local system for existing installations → Use local copy
-  3. Check for bundled files in installer directory → Use bundled files
-  4. Download from internet → Use downloaded files
-  5. If all fail → Clear error message with manual instructions
+  2. Search installer directory and subdirectories for bundled files → Use bundled files
+  3. Download from internet → Use downloaded files
+  4. If all fail → Clear error message with manual instructions
 ```
 
 This means:
 - Bundled installer works offline ✅
 - Online installer still works (downloads when needed) ✅
-- If user has files elsewhere, installer finds and uses them ✅
+- DLL search is scoped to the installer folder only (no system-wide scan) ✅
 - No duplicate downloads or installations ✅
 
 ### Package Size Comparison
