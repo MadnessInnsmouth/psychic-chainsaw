@@ -154,6 +154,14 @@ You can edit this file to customize:
 
 ## Troubleshooting
 
+### Installer Issues
+
+If the installer fails or behaves unexpectedly:
+- Check the **installer log file** at `touchline-installer.log` (in the same folder as `install.bat`)
+- The log contains detailed information about each installation step, including errors and system information
+- Share the contents of this log file when reporting issues — it helps diagnose problems quickly
+- The log file is automatically cleared each time you run the installer, so it always contains fresh information
+
 ### Game starts but closes immediately
 - **On the very first launch after installing BepInEx**, the game will start and then shut down automatically. This is expected — BepInEx generates interop assemblies on the first run and the game exits during this process. Simply launch the game again and it will work normally.
 - **On the second launch**, if the game still closes, check that `BepInEx/interop/` contains `.dll` files. If not, try running the game once more — BepInEx sometimes needs two launches to finish generating everything.
