@@ -37,5 +37,6 @@ if "%INSTALLER_EXIT_CODE%" neq "0" (
 echo Press any key to close...
 pause >nul
 
-:: Exit with the installer's exit code
+:: Exit with the installer's exit code (default to 0 if not set)
+if not defined INSTALLER_EXIT_CODE set INSTALLER_EXIT_CODE=0
 exit /b %INSTALLER_EXIT_CODE%
