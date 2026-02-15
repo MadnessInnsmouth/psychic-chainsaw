@@ -366,12 +366,19 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
             try {
                 $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru -ErrorAction Stop
                 if (-not $gameProcess) {
-                    Write-Err "Failed to start game process"
+                    Write-Err "Failed to start game process. The game may not have proper permissions or the executable is invalid."
+                    if ($attempt -lt $maxAttempts) {
+                        Write-Host "   Will retry..." -ForegroundColor Yellow
+                    }
                     continue
                 }
                 Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
             } catch {
-                Write-Err "Failed to start game: $_"
+                Write-Err "Failed to start game: $($_.Exception.Message)"
+                Write-Host "   This can happen if the game requires administrator privileges or if antivirus is blocking it." -ForegroundColor Yellow
+                if ($attempt -lt $maxAttempts) {
+                    Write-Host "   Will retry..." -ForegroundColor Yellow
+                }
                 continue
             }
             Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
