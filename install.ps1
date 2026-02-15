@@ -24,24 +24,19 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # --- Auto-extract bundled zip if present ---
 # If the user downloaded the distribution zip but only extracted install.bat/ps1 without
 # extracting the rest, look for the Touchline zip alongside the installer and extract it.
-$touchlineZips = @(
-    (Join-Path $ScriptDir "Touchline-FM26-Installer.zip"),
-    (Join-Path $ScriptDir "Touchline-FM26-Installer-Complete.zip"),
-    (Join-Path $ScriptDir "Touchline-FM26-Installer-Full.zip")
-)
+$touchlineZips = Get-ChildItem -Path $ScriptDir -Filter "Touchline-FM26-Installer*.zip" -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending
 foreach ($zipFile in $touchlineZips) {
-    if (Test-Path $zipFile) {
-        # Only extract if the bundled files are missing (e.g. tolk-x64.zip or TouchlineMod.dll)
-        $hasTolkZip = Test-Path (Join-Path $ScriptDir "tolk-x64.zip")
-        $hasTolkDir = Test-Path (Join-Path $ScriptDir "tolk-x64")
-        $hasModDll  = Test-Path (Join-Path $ScriptDir "TouchlineMod.dll")
-        if (-not $hasTolkZip -and -not $hasTolkDir -and -not $hasModDll) {
-            Write-Host "   Extracting bundled files from $([IO.Path]::GetFileName($zipFile))..." -ForegroundColor White
-            Expand-Archive -Path $zipFile -DestinationPath $ScriptDir -Force
-            Write-Host "   [OK] Bundled files extracted" -ForegroundColor Green
-        }
-        break
+    # Only extract if the key bundled files are all missing
+    $hasTolkZip = Test-Path (Join-Path $ScriptDir "tolk-x64.zip")
+    $hasTolkDir = Test-Path (Join-Path $ScriptDir "tolk-x64")
+    $hasModDll  = Test-Path (Join-Path $ScriptDir "TouchlineMod.dll")
+    if (-not $hasTolkZip -and -not $hasTolkDir -and -not $hasModDll) {
+        Write-Host "   Extracting bundled files from $($zipFile.Name)..." -ForegroundColor White
+        Expand-Archive -Path $zipFile.FullName -DestinationPath $ScriptDir -Force
+        Write-Host "   [OK] Bundled files extracted" -ForegroundColor Green
     }
+    break
 }
 
 # --- Version Configuration ---
@@ -349,7 +344,7 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
         Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
         Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
 
-        # Wait for the game process to exit (up to 120 seconds)
+        # Wait up to 2 minutes (120000ms) for the game process to exit
         $exited = $gameProcess.WaitForExit(120000)
         if (-not $exited) {
             Write-Host "   Game is still running. Please close it when ready." -ForegroundColor Yellow
