@@ -34,7 +34,13 @@ if (Test-Path $TranscriptFile) {
 }
 
 # Start transcript to capture ALL console output
-Start-Transcript -Path $TranscriptFile -Force
+try {
+    Start-Transcript -Path $TranscriptFile -Force
+} catch {
+    # If transcript can't start (e.g., permissions), log a warning and continue
+    Write-Log "Warning: Could not start transcript logging: $($_.Exception.Message)" "WARN"
+    Write-Log "Installation will continue, but console output may not be fully captured." "WARN"
+}
 
 # Initialize log file with timestamp and system info
 $logHeader = @"
@@ -64,8 +70,11 @@ function Stop-And-Merge-Transcript {
     # Safely stop transcript and merge it into the main log file
     try {
         Stop-Transcript
+    } catch [System.Management.Automation.PSInvalidOperationException] {
+        # Transcript wasn't running or already stopped, this is expected in some cases
     } catch {
-        # Transcript wasn't running or already stopped, ignore
+        # Log unexpected errors but continue
+        Write-Log "Unexpected error stopping transcript: $($_.Exception.Message)" "WARN"
     }
     
     # Merge transcript into the main log file
