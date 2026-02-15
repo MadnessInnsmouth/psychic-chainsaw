@@ -256,7 +256,7 @@ if (Test-Path $tolkDll) {
 
     # --- Strategy 2: Check for local Tolk DLLs bundled with the installer ---
     if (-not $tolkInstalled) {
-        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        $scriptDir = $PSScriptRoot
 
         # Check for extracted tolk-x64 directory
         $localTolkDir = Join-Path $scriptDir "tolk-x64"

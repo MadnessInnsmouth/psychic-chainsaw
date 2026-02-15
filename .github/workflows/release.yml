@@ -21,7 +21,7 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cd tolk-src\src
-          cl.exe /nologo /O2 /EHsc /LD /Gw /W4 /WL /D_EXPORTING /DUNICODE ^
+          cl.exe /nologo /O2 /EHsc /LD /Gw /W4 /D_EXPORTING /DUNICODE ^
             /Fe:Tolk.dll ^
             Tolk.cpp ^
             ScreenReaderDriverJAWS.cpp ScreenReaderDriverNVDA.cpp ^
@@ -36,7 +36,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path tolk-x64 -Force | Out-Null
           Copy-Item tolk-src\src\Tolk.dll tolk-x64\ -ErrorAction Stop
-          Copy-Item tolk-src\libs\x64\*.dll tolk-x64\
+          Copy-Item tolk-src\libs\x64\*.dll tolk-x64\ -ErrorAction Stop
           Compress-Archive -Path tolk-x64\* -DestinationPath tolk-x64.zip
 
       - name: Upload Tolk artifact
