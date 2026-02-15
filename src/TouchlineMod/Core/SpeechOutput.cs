@@ -36,7 +36,7 @@ namespace TouchlineMod.Core
         private static extern bool FreeLibrary(IntPtr hModule);
 
         private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
-        private static IntPtr _tolkLibraryHandle = IntPtr.Zero;
+        private static volatile IntPtr _tolkLibraryHandle = IntPtr.Zero;
 
         /// <summary>
         /// Static constructor to set up DLL search path before any P/Invoke calls.
@@ -57,8 +57,17 @@ namespace TouchlineMod.Core
                     try
                     {
                         // Per Windows documentation: AddDllDirectory must be called before SetDefaultDllDirectories
-                        AddDllDirectory(modDirectory);
-                        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+                        IntPtr dirHandle = AddDllDirectory(modDirectory);
+                        if (dirHandle == IntPtr.Zero)
+                        {
+                            int errorCode = Marshal.GetLastWin32Error();
+                            Console.WriteLine($"[Touchline] Warning: AddDllDirectory failed (error code: {errorCode}). Falling back to SetDllDirectory.");
+                            SetDllDirectory(modDirectory);
+                        }
+                        else
+                        {
+                            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+                        }
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -78,6 +87,9 @@ namespace TouchlineMod.Core
                         }
                     }
                 }
+
+                // Register cleanup on process exit to ensure proper resource cleanup
+                AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupTolkLibrary();
             }
             catch (Exception ex)
             {
