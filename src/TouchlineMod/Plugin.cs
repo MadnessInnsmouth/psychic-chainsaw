@@ -26,7 +26,15 @@ namespace TouchlineMod
             try
             {
                 TouchlineConfig.Init(Config);
+                Log.LogInfo("Config initialized");
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"Config init failed: {ex.Message}");
+            }
 
+            try
+            {
                 if (SpeechOutput.Initialize())
                 {
                     Log.LogInfo("Speech output initialized");
@@ -34,22 +42,38 @@ namespace TouchlineMod
                 }
                 else
                 {
-                    Log.LogWarning("No screen reader detected - using log fallback");
+                    Log.LogWarning("No screen reader detected — using log fallback");
                 }
-
-                _manager = gameObject.AddComponent<AccessibilityManager>();
-
-                _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
-                _harmony.PatchAll();
-                Patches.MatchPatches.ApplyMatchPatches(_harmony);
-                Log.LogInfo("Harmony patches applied");
-
-                Log.LogInfo("Touchline loaded successfully");
             }
             catch (Exception ex)
             {
-                Log.LogError($"Failed to initialize Touchline: {ex}");
+                Log.LogError($"Speech init failed: {ex.Message}");
             }
+
+            try
+            {
+                _manager = gameObject.AddComponent<AccessibilityManager>();
+                Log.LogInfo("AccessibilityManager added");
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"AccessibilityManager failed: {ex.Message}");
+            }
+
+            try
+            {
+                _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
+                _harmony.PatchAll();
+                Patches.FocusPatches.ApplyManualPatches(_harmony);
+                Patches.MatchPatches.ApplyMatchPatches(_harmony);
+                Log.LogInfo("Harmony patches applied");
+            }
+            catch (Exception ex)
+            {
+                Log.LogError($"Harmony patches failed: {ex.Message}");
+            }
+
+            Log.LogInfo("Touchline loaded successfully");
         }
 
         private void OnDestroy()
@@ -64,6 +88,6 @@ namespace TouchlineMod
     {
         public const string PLUGIN_GUID = "com.touchline.fm26accessibility";
         public const string PLUGIN_NAME = "Touchline";
-        public const string PLUGIN_VERSION = "0.3.0";
+        public const string PLUGIN_VERSION = "0.4.0";
     }
 }

@@ -21,10 +21,6 @@ namespace TouchlineMod.Core
         private MatchPatches _matchPatches;
         private bool _debugMode;
 
-        // Periodic content change detection
-        private string _lastScreenContent = string.Empty;
-        private float _contentPollTimer;
-        private const float ContentPollInterval = 2.0f;
         private const int MaxScreenTextItems = 50;
         private const int MaxTextCollectionDepth = 15;
 
@@ -42,19 +38,33 @@ namespace TouchlineMod.Core
         {
             Plugin.Log.LogInfo("AccessibilityManager starting...");
 
-            _focusTracker = gameObject.AddComponent<FocusTracker>();
-            _uiScanner = gameObject.AddComponent<UIScanner>();
-            _matchPatches = gameObject.AddComponent<MatchPatches>();
+            try
+            {
+                _focusTracker = gameObject.AddComponent<FocusTracker>();
+                _uiScanner = gameObject.AddComponent<UIScanner>();
+                _matchPatches = gameObject.AddComponent<MatchPatches>();
 
-            _focusTracker.OnFocusChanged += HandleFocusChanged;
+                _focusTracker.OnFocusChanged += HandleFocusChanged;
 
-            Plugin.Log.LogInfo("AccessibilityManager ready");
+                Plugin.Log.LogInfo("AccessibilityManager ready");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError($"AccessibilityManager start failed: {ex.Message}");
+            }
         }
 
         private void Update()
         {
-            HandleHotkeys();
-            PollForContentChanges();
+            try
+            {
+                HandleHotkeys();
+            }
+            catch (Exception ex)
+            {
+                if (_debugMode)
+                    Plugin.Log.LogWarning($"Hotkey error: {ex.Message}");
+            }
         }
 
         private void HandleHotkeys()
@@ -71,7 +81,7 @@ namespace TouchlineMod.Core
             if (IsKeyCombo(KeyCode.S, ctrl: true, shift: true))
             {
                 SpeechOutput.Speak("Scanning UI...");
-                _uiScanner.PerformDeepScan();
+                _uiScanner?.PerformDeepScan();
             }
 
             // Ctrl+Shift+W - Where am I?
@@ -120,53 +130,6 @@ namespace TouchlineMod.Core
         }
 
         /// <summary>
-        /// Periodically check for dynamic content changes on the current screen
-        /// (e.g., pop-up dialogs, status messages, notifications).
-        /// </summary>
-        private void PollForContentChanges()
-        {
-            _contentPollTimer -= Time.deltaTime;
-            if (_contentPollTimer > 0f) return;
-            _contentPollTimer = ContentPollInterval;
-
-            try
-            {
-                // Look for popup/dialog/notification panels that may appear dynamically
-                var rootObjects = new List<GameObject>();
-                var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-                scene.GetRootGameObjects(rootObjects);
-
-                foreach (var root in rootObjects)
-                {
-                    ScanForDynamicContent(root.transform);
-                }
-            }
-            catch { }
-        }
-
-        /// <summary>
-        /// Scan for popup dialogs, notifications, and other dynamic content.
-        /// </summary>
-        private void ScanForDynamicContent(Transform parent)
-        {
-            if (parent == null) return;
-            string name = parent.name.ToLower();
-
-            // Detect common popup/dialog/notification patterns
-            if ((name.Contains("popup") || name.Contains("dialog") || name.Contains("modal")
-                || name.Contains("notification") || name.Contains("alert") || name.Contains("toast"))
-                && parent.gameObject.activeInHierarchy)
-            {
-                string text = TextExtractor.ExtractAll(parent.gameObject);
-                if (!string.IsNullOrEmpty(text) && text != _lastScreenContent)
-                {
-                    _lastScreenContent = text;
-                    SpeechOutput.Speak(TextCleaner.Clean(text), false);
-                }
-            }
-        }
-
-        /// <summary>
         /// Announce the currently focused element with full context.
         /// </summary>
         public void AnnounceCurrent()
@@ -189,7 +152,6 @@ namespace TouchlineMod.Core
 
         /// <summary>
         /// Read all visible text on the current screen.
-        /// Provides a full overview of the active UI for orientation.
         /// </summary>
         public void ReadScreen()
         {
@@ -223,9 +185,6 @@ namespace TouchlineMod.Core
             }
         }
 
-        /// <summary>
-        /// Collect visible text from the UI hierarchy for screen reading.
-        /// </summary>
         private void CollectVisibleText(Transform parent, List<string> texts, int depth)
         {
             if (parent == null || depth > MaxTextCollectionDepth) return;
@@ -241,7 +200,6 @@ namespace TouchlineMod.Core
                 }
             }
 
-            // Limit total text to prevent extremely long announcements
             if (texts.Count >= MaxScreenTextItems) return;
 
             for (int i = 0; i < parent.childCount; i++)
@@ -250,9 +208,6 @@ namespace TouchlineMod.Core
             }
         }
 
-        /// <summary>
-        /// Announce available keyboard shortcuts.
-        /// </summary>
         public void AnnounceHelp()
         {
             string help = "Touchline keyboard shortcuts: " +

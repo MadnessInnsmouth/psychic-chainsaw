@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -9,8 +8,8 @@ namespace TouchlineMod.Core
 {
     /// <summary>
     /// Provides speech output via screen readers (Tolk/NVDA/JAWS) with SAPI fallback.
-    /// Tolk is a screen reader abstraction library that supports NVDA, JAWS, and others.
     /// If Tolk is unavailable, falls back to Windows SAPI via COM interop.
+    /// If neither is available, falls back to logging text to the BepInEx log.
     /// </summary>
     public static class SpeechOutput
     {
@@ -18,140 +17,12 @@ namespace TouchlineMod.Core
         private static bool _initialized;
         private static bool _tolkAvailable;
         private static bool _sapiAvailable;
+        private static bool _dllPathConfigured;
 
         #region Windows DLL Loading
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetDllDirectory(string lpPathName);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr LoadLibrary(string lpFileName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeLibrary(IntPtr hModule);
-
-        private static volatile IntPtr _tolkLibraryHandle = IntPtr.Zero;
-        private static readonly List<IntPtr> _companionLibraryHandles = new List<IntPtr>();
-
-        // Tolk companion DLLs that must be loadable for screen reader support.
-        // These are loaded by Tolk at runtime via LoadLibrary; pre-loading them
-        // from the mod folder ensures they are found even though the mod folder
-        // is not on the default DLL search path.
-        private static readonly string[] TolkCompanionDlls = new[]
-        {
-            "nvdaControllerClient64.dll",
-            "SAAPI64.dll"
-        };
-
-        /// <summary>
-        /// Static constructor to set up DLL search path before any P/Invoke calls.
-        /// This ensures Tolk.dll and its dependencies are loaded from the mod folder.
-        ///
-        /// IMPORTANT: We must NOT call SetDefaultDllDirectories here because it
-        /// changes the process-wide DLL search order and can prevent the game and
-        /// BepInEx from finding their own native libraries, causing the game to
-        /// crash on startup. Instead we use SetDllDirectory (which only adds one
-        /// extra search directory) and explicitly pre-load every native DLL that
-        /// the mod needs.
-        /// </summary>
-        static SpeechOutput()
-        {
-            try
-            {
-                // Get the directory where this assembly (TouchlineMod.dll) is located
-                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-                string modDirectory = Path.GetDirectoryName(assemblyLocation);
-
-                if (!string.IsNullOrEmpty(modDirectory) && Directory.Exists(modDirectory))
-                {
-                    // Use SetDllDirectory to add the mod folder to the DLL search path.
-                    // Unlike SetDefaultDllDirectories, this does not remove the standard
-                    // search locations (application dir, system32, etc.) so it is safe to
-                    // call in a hosted process such as a game.
-                    SetDllDirectory(modDirectory);
-
-                    // Pre-load Tolk companion DLLs (e.g. nvdaControllerClient64.dll) so
-                    // that when Tolk_Load() runs it can find them.  These must be loaded
-                    // BEFORE Tolk.dll itself because Tolk resolves them at load time.
-                    foreach (string companionDll in TolkCompanionDlls)
-                    {
-                        string companionPath = Path.Combine(modDirectory, companionDll);
-                        if (File.Exists(companionPath))
-                        {
-                            IntPtr handle = LoadLibrary(companionPath);
-                            if (handle != IntPtr.Zero)
-                            {
-                                _companionLibraryHandles.Add(handle);
-                            }
-                            else
-                            {
-                                int errorCode = Marshal.GetLastWin32Error();
-                                Console.WriteLine($"[Touchline] Warning: Failed to pre-load {companionDll} (error code: {errorCode}).");
-                            }
-                        }
-                    }
-
-                    // Pre-load Tolk.dll from the mod directory to ensure it's found
-                    string tolkPath = Path.Combine(modDirectory, "Tolk.dll");
-                    if (File.Exists(tolkPath))
-                    {
-                        _tolkLibraryHandle = LoadLibrary(tolkPath);
-                        if (_tolkLibraryHandle == IntPtr.Zero)
-                        {
-                            int errorCode = Marshal.GetLastWin32Error();
-                            Console.WriteLine($"[Touchline] Warning: Failed to pre-load Tolk.dll (error code: {errorCode}). Will attempt standard loading.");
-                        }
-                    }
-                }
-
-                // Register cleanup on process exit to ensure proper resource cleanup
-                // Note: ProcessExit handlers are intentionally not unregistered as they persist
-                // for the lifetime of the AppDomain, ensuring cleanup even if Shutdown() isn't called.
-                AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupNativeLibraries();
-            }
-            catch (Exception ex)
-            {
-                // If this fails, we'll fall back to the default DLL search behavior
-                // The Log may not be initialized yet, so we can't log here
-                Console.WriteLine($"[Touchline] Failed to set DLL directory: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Clean up all manually loaded native library handles.
-        /// This method is safe to call multiple times (e.g., from both Shutdown() and ProcessExit).
-        /// Companion DLLs are freed first, then Tolk itself, to respect dependency order.
-        /// </summary>
-        private static void CleanupNativeLibraries()
-        {
-            // Free companion libraries first (they are dependencies of Tolk)
-            foreach (IntPtr handle in _companionLibraryHandles)
-            {
-                if (handle != IntPtr.Zero)
-                {
-                    try { FreeLibrary(handle); }
-                    catch (Exception ex)
-                    {
-                        // Best-effort cleanup during process exit; log if possible.
-                        Log?.LogWarning($"Failed to free companion library: {ex.Message}");
-                    }
-                }
-            }
-            _companionLibraryHandles.Clear();
-
-            if (_tolkLibraryHandle != IntPtr.Zero)
-            {
-                try
-                {
-                    FreeLibrary(_tolkLibraryHandle);
-                    _tolkLibraryHandle = IntPtr.Zero;
-                }
-                catch (Exception ex)
-                {
-                    Log?.LogWarning($"Failed to free Tolk library: {ex.Message}");
-                }
-            }
-        }
 
         #endregion
 
@@ -204,12 +75,10 @@ namespace TouchlineMod.Core
             [In] ref Guid riid,
             out IntPtr ppv);
 
-        // ISpVoice CLSID and IID for Windows SAPI
         private static readonly Guid CLSID_SpVoice = new Guid("96749377-3391-11D2-9EE3-00C04F797396");
         private static readonly Guid IID_ISpVoice = new Guid("6C44DF74-72B9-4992-A1EC-EF996E0422D4");
         private static IntPtr _sapiVoice = IntPtr.Zero;
 
-        // ISpVoice::Speak is the 21st method in the vtable (index 20)
         private delegate int SpVoiceSpeakDelegate(
             IntPtr pThis,
             [MarshalAs(UnmanagedType.LPWStr)] string pwcs,
@@ -222,12 +91,46 @@ namespace TouchlineMod.Core
         #endregion
 
         /// <summary>
+        /// Set the DLL search path to the mod directory so Tolk.dll and its
+        /// companion DLLs (nvdaControllerClient64.dll, SAAPI64.dll) are found.
+        /// Called once during Initialize(). Safe to call multiple times.
+        /// </summary>
+        private static void ConfigureDllSearchPath()
+        {
+            if (_dllPathConfigured) return;
+            _dllPathConfigured = true;
+
+            try
+            {
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+                if (string.IsNullOrEmpty(assemblyLocation))
+                {
+                    Log?.LogInfo("Assembly location unavailable — using default DLL search path");
+                    return;
+                }
+
+                string modDirectory = Path.GetDirectoryName(assemblyLocation);
+                if (!string.IsNullOrEmpty(modDirectory) && Directory.Exists(modDirectory))
+                {
+                    SetDllDirectory(modDirectory);
+                    Log?.LogInfo($"DLL search path set to: {modDirectory}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log?.LogWarning($"Failed to set DLL search path: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Initialize the speech output system. Tries Tolk first, then SAPI.
         /// </summary>
         /// <returns>True if any speech backend is available.</returns>
         public static bool Initialize()
         {
             if (_initialized) return _tolkAvailable || _sapiAvailable;
+
+            ConfigureDllSearchPath();
 
             _tolkAvailable = TryInitializeTolk();
             if (!_tolkAvailable)
@@ -258,7 +161,7 @@ namespace TouchlineMod.Core
             }
             catch (DllNotFoundException)
             {
-                Log.LogInfo("Tolk.dll not found - screen reader integration unavailable");
+                Log.LogInfo("Tolk.dll not found — screen reader integration unavailable");
             }
             catch (Exception ex)
             {
@@ -298,8 +201,6 @@ namespace TouchlineMod.Core
         /// <summary>
         /// Speak text through the active speech backend.
         /// </summary>
-        /// <param name="text">Text to speak.</param>
-        /// <param name="interrupt">If true, stop current speech first.</param>
         public static void Speak(string text, bool interrupt = true)
         {
             if (string.IsNullOrWhiteSpace(text)) return;
@@ -361,7 +262,6 @@ namespace TouchlineMod.Core
                 }
             }
 
-            // Fall through to speak-only
             Speak(text, interrupt);
         }
 
@@ -399,8 +299,6 @@ namespace TouchlineMod.Core
                 _sapiAvailable = false;
             }
 
-            // Explicitly cleanup native libraries (also registered with ProcessExit for redundancy)
-            CleanupNativeLibraries();
             _initialized = false;
         }
 
@@ -408,9 +306,7 @@ namespace TouchlineMod.Core
         {
             if (_sapiVoice == IntPtr.Zero) return;
 
-            // Get ISpVoice vtable
             IntPtr vtable = Marshal.ReadIntPtr(_sapiVoice);
-            // ISpVoice::Speak is at vtable index 20
             IntPtr speakPtr = Marshal.ReadIntPtr(vtable, 20 * IntPtr.Size);
             var speakFunc = Marshal.GetDelegateForFunctionPointer<SpVoiceSpeakDelegate>(speakPtr);
 
