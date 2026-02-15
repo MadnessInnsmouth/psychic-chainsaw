@@ -1,5 +1,31 @@
 # Installing Touchline - FM26 Accessibility Mod
 
+## One-Click Install (Recommended)
+
+The easiest way to install Touchline is the one-click installer:
+
+1. Download the latest release from [Releases](../../releases) or clone the repository
+2. **Double-click `install.bat`** — that's it!
+
+The installer automatically:
+- Finds your Football Manager 2026 installation (Steam or Epic Games)
+- Downloads and installs BepInEx 6 (the mod framework)
+- Downloads and installs Tolk (screen reader bridge for NVDA/JAWS)
+- Installs the Touchline accessibility mod
+
+After installation:
+1. Start **NVDA** (or JAWS) screen reader
+2. Launch **Football Manager 2026**
+3. You should hear "Touchline accessibility mod loaded"
+
+> **Note**: If the installer can't find FM26 automatically, it will ask you to enter the path.
+
+---
+
+## Manual Installation
+
+If you prefer to install manually, follow these steps:
+
 ## Prerequisites
 
 - **Football Manager 26** (Steam or Epic Games)
@@ -63,7 +89,9 @@ See [BUILDING.md](BUILDING.md) for instructions.
 |----------------|--------|
 | **Ctrl+Shift+D** | Toggle debug mode |
 | **Ctrl+Shift+S** | Deep scan UI (saves to `TouchlineUIScan.txt`) |
-| **Ctrl+Shift+W** | "Where am I?" - Announce current focus |
+| **Ctrl+Shift+W** | "Where am I?" - Announce current focus with context |
+| **Ctrl+Shift+M** | Read match score, minute, and commentary |
+| **Ctrl+Shift+R** | Read entire visible screen |
 | **Ctrl+Shift+H** | Announce help / keyboard shortcuts |
 | **Escape** | Stop speech |
 

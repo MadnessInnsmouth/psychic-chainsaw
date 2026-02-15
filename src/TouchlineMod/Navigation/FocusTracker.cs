@@ -30,6 +30,9 @@ namespace TouchlineMod.Navigation
         // Table tracking
         private GameObject _currentTableContainer;
         private bool _tableHeadersAnnounced;
+        private List<string> _cachedHeaders;
+
+        private const int MaxParentContextDepth = 10;
 
         private void Update()
         {
@@ -189,7 +192,38 @@ namespace TouchlineMod.Navigation
                 element.Name = ExtractText(obj);
             }
 
+            // Add parent context for screen/menu orientation
+            element.Context = GetParentContext(obj);
+
             return element;
+        }
+
+        /// <summary>
+        /// Get meaningful parent context for a focused element (e.g., panel/screen name).
+        /// </summary>
+        private string GetParentContext(GameObject obj)
+        {
+            var parent = obj.transform.parent;
+            int depth = 0;
+            while (parent != null && depth < MaxParentContextDepth)
+            {
+                string name = parent.name;
+                string lower = name.ToLower();
+                // Look for meaningful container names
+                if (lower.Contains("screen") || lower.Contains("panel") || lower.Contains("page")
+                    || lower.Contains("menu") || lower.Contains("tab") || lower.Contains("section")
+                    || lower.Contains("view") || lower.Contains("dialog") || lower.Contains("window"))
+                {
+                    string cleaned = TextCleaner.Clean(name.Replace("_", " "));
+                    if (!string.IsNullOrEmpty(cleaned) && cleaned.Length > 2)
+                    {
+                        return cleaned;
+                    }
+                }
+                parent = parent.parent;
+                depth++;
+            }
+            return string.Empty;
         }
 
         /// <summary>
@@ -240,20 +274,31 @@ namespace TouchlineMod.Navigation
 
         /// <summary>
         /// Check if the focused element is inside a table and announce headers if needed.
+        /// Also reads the full table row when ReadFullTableRow is enabled.
         /// </summary>
         private void CheckTableContext(GameObject obj)
         {
             // Look for table-like parent containers
             var parent = obj.transform.parent;
+            GameObject rowObj = null;
+
             while (parent != null)
             {
                 string name = parent.name.ToLower();
+
+                // Detect row containers (the element's immediate parent in a table)
+                if (name.Contains("row") || name.Contains("item") || name.Contains("entry"))
+                {
+                    rowObj = parent.gameObject;
+                }
+
                 if (name.Contains("table") || name.Contains("grid") || name.Contains("list"))
                 {
                     if (parent.gameObject != _currentTableContainer)
                     {
                         _currentTableContainer = parent.gameObject;
                         _tableHeadersAnnounced = false;
+                        _cachedHeaders = null;
                     }
 
                     if (!_tableHeadersAnnounced && TouchlineConfig.AnnounceTableHeaders.Value)
@@ -261,6 +306,16 @@ namespace TouchlineMod.Navigation
                         AnnounceTableHeaders(parent.gameObject);
                         _tableHeadersAnnounced = true;
                     }
+
+                    // Announce list position ("X of Y")
+                    ComputePositionHint(obj, parent);
+
+                    // Read full table row if enabled
+                    if (TouchlineConfig.ReadFullTableRow.Value && rowObj != null)
+                    {
+                        ReadTableRow(rowObj);
+                    }
+
                     return;
                 }
                 parent = parent.parent;
@@ -269,30 +324,84 @@ namespace TouchlineMod.Navigation
             // Not in a table anymore
             _currentTableContainer = null;
             _tableHeadersAnnounced = false;
+            _cachedHeaders = null;
+        }
+
+        /// <summary>
+        /// Compute list/table position hint ("X of Y") for the current element.
+        /// </summary>
+        private void ComputePositionHint(GameObject obj, Transform container)
+        {
+            if (CurrentElement == null) return;
+
+            try
+            {
+                // Find the row/item parent that is a direct child of the container
+                Transform itemParent = obj.transform;
+                while (itemParent != null && itemParent.parent != container)
+                {
+                    itemParent = itemParent.parent;
+                }
+
+                if (itemParent != null && itemParent.parent == container)
+                {
+                    int index = itemParent.GetSiblingIndex() + 1;
+                    int total = container.childCount;
+                    CurrentElement.PositionHint = $"{index} of {total}";
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Read the full contents of a table row using TextExtractor.
+        /// </summary>
+        private void ReadTableRow(GameObject rowObj)
+        {
+            try
+            {
+                string rowText = UI.TextExtractor.ExtractTableRow(rowObj, _cachedHeaders);
+                if (!string.IsNullOrEmpty(rowText))
+                {
+                    SpeechOutput.Speak(rowText, false);
+                }
+            }
+            catch { }
         }
 
         private void AnnounceTableHeaders(GameObject tableObj)
         {
-            // Look for a header row (common patterns in FM26 UI)
-            var headers = new List<string>();
-            var headerTransform = tableObj.transform.Find("Header");
-            if (headerTransform == null)
-                headerTransform = tableObj.transform.Find("Headers");
-            if (headerTransform == null)
-                headerTransform = tableObj.transform.Find("ColumnHeaders");
+            // Use TextExtractor to get headers (searches multiple common patterns)
+            _cachedHeaders = UI.TextExtractor.ExtractTableHeaders(tableObj);
 
-            if (headerTransform != null)
+            if (_cachedHeaders.Count > 0)
             {
-                foreach (Transform child in headerTransform)
-                {
-                    string headerText = ExtractText(child.gameObject);
-                    if (!string.IsNullOrEmpty(headerText))
-                        headers.Add(headerText);
-                }
+                SpeechOutput.Speak("Table columns: " + string.Join(", ", _cachedHeaders), false);
+            }
+            else
+            {
+                // Fallback: look for header row with legacy search
+                var headers = new List<string>();
+                var headerTransform = tableObj.transform.Find("Header");
+                if (headerTransform == null)
+                    headerTransform = tableObj.transform.Find("Headers");
+                if (headerTransform == null)
+                    headerTransform = tableObj.transform.Find("ColumnHeaders");
 
-                if (headers.Count > 0)
+                if (headerTransform != null)
                 {
-                    SpeechOutput.Speak("Table columns: " + string.Join(", ", headers), false);
+                    foreach (Transform child in headerTransform)
+                    {
+                        string headerText = ExtractText(child.gameObject);
+                        if (!string.IsNullOrEmpty(headerText))
+                            headers.Add(headerText);
+                    }
+
+                    if (headers.Count > 0)
+                    {
+                        _cachedHeaders = headers;
+                        SpeechOutput.Speak("Table columns: " + string.Join(", ", headers), false);
+                    }
                 }
             }
         }
