@@ -86,10 +86,13 @@ function Find-DllOnSystem {
         "$env:USERPROFILE\Documents"
     )
     
+    # Exclusion pattern for filtering out system and irrelevant directories
+    $excludePattern = '\\Windows\\|\\node_modules\\|\\\.git\\|\\AppData\\Roaming\\|\\System32\\'
+    
     foreach ($root in $deepSearchRoots) {
         if (Test-Path $root) {
             $found = Get-ChildItem -Path $root -Filter $DllName -Recurse -Depth 3 -ErrorAction SilentlyContinue | 
-                     Where-Object { $_.FullName -notmatch '\\node_modules\\|\\\.git\\' } |
+                     Where-Object { $_.FullName -notmatch $excludePattern } |
                      Select-Object -First 1
             if ($found) {
                 Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
@@ -98,9 +101,18 @@ function Find-DllOnSystem {
         }
     }
     
-    # Search all fixed drives (C:, D:, E:, etc.) - only if not found yet
-    Write-Host "   Performing system-wide search (this may take a moment)..." -ForegroundColor Gray
-    $drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used -gt 0 -and $_.Free -gt 0 }
+    # Search all local fixed drives (C:, D:, E:, etc.) - only if not found yet
+    # Only search local fixed drives to avoid slow network drives
+    Write-Host "   Performing system-wide search on local drives (this may take a moment)..." -ForegroundColor Gray
+    $drives = Get-PSDrive -PSProvider FileSystem | 
+              Where-Object { $_.Used -gt 0 -and $_.Free -gt 0 } |
+              Where-Object { 
+                  # Verify it's a local drive by checking if root is accessible quickly
+                  $testPath = "$($_.Name):\"
+                  (Test-Path $testPath -ErrorAction SilentlyContinue) -and 
+                  ($testPath -notmatch '^\\\\')  # Exclude UNC paths
+              }
+    
     foreach ($drive in $drives) {
         $driveRoot = "$($drive.Name):\"
         
@@ -115,7 +127,7 @@ function Find-DllOnSystem {
         foreach ($commonPath in $commonPaths) {
             if (Test-Path $commonPath) {
                 $found = Get-ChildItem -Path $commonPath -Filter $DllName -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-                         Where-Object { $_.FullName -notmatch '\\Windows\\|\\node_modules\\|\\\.git\\' } |
+                         Where-Object { $_.FullName -notmatch $excludePattern } |
                          Select-Object -First 1
                 if ($found) {
                     Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray

@@ -93,13 +93,13 @@ if (-not $tolkFound) {
 # Copy BepInEx zip if available (optional)
 Write-Host ""
 Write-Host "   [4/5] Looking for BepInEx package..." -ForegroundColor White
-$bepInExZips = Get-ChildItem "$scriptDir\BepInEx-Unity.IL2CPP-win-x64*.zip" -ErrorAction SilentlyContinue |
+$bepInExZip = Get-ChildItem "$scriptDir\BepInEx-Unity.IL2CPP-win-x64*.zip" -ErrorAction SilentlyContinue |
                Sort-Object LastWriteTime -Descending |
                Select-Object -First 1
 
-if ($bepInExZips) {
-    Copy-Item $bepInExZips.FullName -Destination $outputDir -Force
-    Write-Host "   [OK] BepInEx package copied ($($bepInExZips.Name))" -ForegroundColor Green
+if ($bepInExZip) {
+    Copy-Item $bepInExZip.FullName -Destination $outputDir -Force
+    Write-Host "   [OK] BepInEx package copied ($($bepInExZip.Name))" -ForegroundColor Green
     Write-Host "       NOTE: Including BepInEx (~40 MB) makes the installer fully offline-capable" -ForegroundColor Gray
 } else {
     Write-Host "   [!] BepInEx package not found - installer will download it when needed" -ForegroundColor Yellow
