@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using BepInEx.Logging;
 
@@ -15,6 +17,49 @@ namespace TouchlineMod.Core
         private static bool _initialized;
         private static bool _tolkAvailable;
         private static bool _sapiAvailable;
+
+        #region Windows DLL Loading
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetDllDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        /// <summary>
+        /// Static constructor to set up DLL search path before any P/Invoke calls.
+        /// This ensures Tolk.dll and its dependencies are loaded from the mod folder.
+        /// </summary>
+        static SpeechOutput()
+        {
+            try
+            {
+                // Get the directory where this assembly (TouchlineMod.dll) is located
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+                string modDirectory = Path.GetDirectoryName(assemblyLocation);
+
+                if (!string.IsNullOrEmpty(modDirectory) && Directory.Exists(modDirectory))
+                {
+                    // Add the mod directory to the DLL search path
+                    SetDllDirectory(modDirectory);
+
+                    // Pre-load Tolk.dll from the mod directory to ensure it's found
+                    string tolkPath = Path.Combine(modDirectory, "Tolk.dll");
+                    if (File.Exists(tolkPath))
+                    {
+                        LoadLibrary(tolkPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // If this fails, we'll fall back to the default DLL search behavior
+                // The Log may not be initialized yet, so we can't log here
+                Console.WriteLine($"[Touchline] Failed to set DLL directory: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         #region Tolk Native Methods
 
