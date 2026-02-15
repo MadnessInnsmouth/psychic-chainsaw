@@ -55,16 +55,6 @@ dotnet build TouchlineMod.sln -c Release
 
 For full details, see [INSTALL.md](INSTALL.md) and [BUILDING.md](BUILDING.md).
 
-## Running the Python Prototype
-
-The `prototype/` directory contains the original proof-of-concept:
-
-```bash
-cd prototype
-pip install pyttsx3
-python demo.py
-```
-
 ---
 
 **Version**: 0.3.0  
