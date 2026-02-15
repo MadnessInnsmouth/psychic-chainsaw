@@ -149,10 +149,9 @@ namespace UnityEngine
 
     public class MonoBehaviour : Behaviour
     {
-        protected virtual void Awake() { }
-        protected virtual void Start() { }
-        protected virtual void Update() { }
-        protected virtual void OnDestroy() { }
+        // Unity lifecycle methods (Awake, Start, Update, OnDestroy, etc.)
+        // are called via reflection, not defined on MonoBehaviour.
+        // Plugin classes define these as private void methods.
     }
 
     public class GameObject : Object

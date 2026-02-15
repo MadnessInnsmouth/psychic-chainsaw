@@ -16,7 +16,7 @@ namespace TouchlineMod
         private Harmony _harmony;
         private AccessibilityManager _manager;
 
-        private new void Awake()
+        private void Awake()
         {
             Instance = this;
             Log = base.Logger;
@@ -41,7 +41,7 @@ namespace TouchlineMod
 
                 _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
                 _harmony.PatchAll();
-                Log.LogInfo($"Applied {_harmony.GetPatchedMethods().GetEnumerator().Current} Harmony patches");
+                Log.LogInfo("Harmony patches applied");
 
                 Log.LogInfo("Touchline loaded successfully");
             }
@@ -51,7 +51,7 @@ namespace TouchlineMod
             }
         }
 
-        private new void OnDestroy()
+        private void OnDestroy()
         {
             _harmony?.UnpatchSelf();
             SpeechOutput.Shutdown();

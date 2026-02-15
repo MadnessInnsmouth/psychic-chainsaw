@@ -18,7 +18,7 @@ namespace TouchlineMod.Core
         private UIScanner _uiScanner;
         private bool _debugMode;
 
-        private new void Awake()
+        private void Awake()
         {
             if (Instance != null && Instance != this)
             {
@@ -28,7 +28,7 @@ namespace TouchlineMod.Core
             Instance = this;
         }
 
-        private new void Start()
+        private void Start()
         {
             Plugin.Log.LogInfo("AccessibilityManager starting...");
 
@@ -40,7 +40,7 @@ namespace TouchlineMod.Core
             Plugin.Log.LogInfo("AccessibilityManager ready");
         }
 
-        private new void Update()
+        private void Update()
         {
             HandleHotkeys();
         }
@@ -136,7 +136,7 @@ namespace TouchlineMod.Core
             return true;
         }
 
-        private new void OnDestroy()
+        private void OnDestroy()
         {
             if (_focusTracker != null)
                 _focusTracker.OnFocusChanged -= HandleFocusChanged;

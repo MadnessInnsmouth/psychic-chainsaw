@@ -68,7 +68,7 @@ namespace TouchlineMod.UI
             }
         }
 
-        private new void Update()
+        private void Update()
         {
             if (_scanCooldown > 0f)
                 _scanCooldown -= Time.deltaTime;

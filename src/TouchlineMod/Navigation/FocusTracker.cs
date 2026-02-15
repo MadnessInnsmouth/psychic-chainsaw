@@ -31,7 +31,7 @@ namespace TouchlineMod.Navigation
         private GameObject _currentTableContainer;
         private bool _tableHeadersAnnounced;
 
-        private new void Update()
+        private void Update()
         {
             TrackFocus();
 
