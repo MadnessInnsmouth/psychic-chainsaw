@@ -117,7 +117,9 @@ See [BUILDING.md](BUILDING.md) for complete build instructions.
 ```
 psychic-chainsaw/
 ├── install.bat                 # One-click installer (double-click to run)
-├── install.ps1                 # PowerShell installer script
+├── install.ps1                 # PowerShell installer script (flexible, searches local system)
+├── package-installer.ps1       # Create bundled installer packages
+├── create-packages.bat         # Helper to build distribution packages
 ├── src/TouchlineMod/           # C# BepInEx plugin (the actual mod)
 │   ├── Plugin.cs               # BepInEx entry point
 │   ├── Core/                   # Speech output, text cleaning, manager
@@ -129,8 +131,26 @@ psychic-chainsaw/
 ├── TouchlineMod.sln            # .NET solution file
 ├── INSTALL.md                  # Installation guide
 ├── BUILDING.md                 # Build from source guide
+├── DISTRIBUTION.md             # Guide for bundling and distribution options
 └── README.md                   # This file
 ```
+
+## Distribution & Packaging
+
+The installer supports both online and offline installation:
+
+- **Online mode**: Automatically downloads required files from the internet
+- **Offline mode**: Searches your entire computer for existing DLL files first
+- **Bundled mode**: Include all DLLs in the installer package for complete offline use
+
+To create a bundled installer package:
+```powershell
+.\package-installer.ps1
+```
+
+This creates `Touchline-FM26-Installer.zip` with all dependencies included.
+
+See [DISTRIBUTION.md](DISTRIBUTION.md) for detailed packaging and distribution options.
 
 ## How It Works
 
