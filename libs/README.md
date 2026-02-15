@@ -46,6 +46,9 @@ The build system looks for these in `<FM26_PATH>/BepInEx/`:
 
 ## Tolk (Screen Reader Library)
 
-Download from: https://github.com/dkager/tolk/releases
+The upstream Tolk repository (https://github.com/dkager/tolk) provides source code but does
+not publish pre-built releases. The Touchline release workflow builds Tolk from source and
+bundles it as `tolk-x64.zip`. You can also download the latest bundle from the
+[Releases page](../../../releases).
 
 Place the x64 `Tolk.dll` in the game's plugin folder alongside `TouchlineMod.dll`.

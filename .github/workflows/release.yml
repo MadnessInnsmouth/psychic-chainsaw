@@ -9,8 +9,45 @@ permissions:
   contents: write
 
 jobs:
+  build-tolk:
+    runs-on: windows-latest
+
+    steps:
+      - name: Clone Tolk repository
+        run: git clone https://github.com/dkager/tolk.git tolk-src
+
+      - name: Build Tolk (x64, without JNI)
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cd tolk-src\src
+          cl.exe /nologo /O2 /EHsc /LD /Gw /W4 /D_EXPORTING /DUNICODE ^
+            /Fe:Tolk.dll ^
+            Tolk.cpp ^
+            ScreenReaderDriverJAWS.cpp ScreenReaderDriverNVDA.cpp ^
+            ScreenReaderDriverSA.cpp ScreenReaderDriverSNova.cpp ^
+            ScreenReaderDriverWE.cpp ScreenReaderDriverZT.cpp ^
+            ScreenReaderDriverSAPI.cpp ^
+            fsapi.c wineyes.c zt.c ^
+            User32.Lib Ole32.Lib OleAut32.Lib
+
+      - name: Package Tolk x64
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path tolk-x64 -Force | Out-Null
+          Copy-Item tolk-src\src\Tolk.dll tolk-x64\ -ErrorAction Stop
+          Copy-Item tolk-src\libs\x64\*.dll tolk-x64\ -ErrorAction Stop
+          Compress-Archive -Path tolk-x64\* -DestinationPath tolk-x64.zip
+
+      - name: Upload Tolk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tolk-x64
+          path: tolk-x64.zip
+
   build-and-release:
     runs-on: ubuntu-latest
+    needs: build-tolk
 
     steps:
       - name: Checkout repository
@@ -28,6 +65,11 @@ jobs:
 
       - name: Build
         run: dotnet build TouchlineMod.sln -c Release --no-restore
+
+      - name: Download Tolk artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tolk-x64
 
       - name: Read version from project
         id: version
@@ -54,6 +96,7 @@ jobs:
           cp README.md release-package/
           cp INSTALL.md release-package/
           cp LICENSE release-package/
+          cp tolk-x64.zip release-package/
           cd release-package
           zip -r ../Touchline-FM26-Installer.zip .
 
@@ -81,8 +124,11 @@ jobs:
             - `install.bat` — Double-click this to install everything
             - `install.ps1` — PowerShell installer (called by install.bat)
             - `TouchlineMod.dll` — The accessibility mod
+            - `tolk-x64.zip` — Tolk screen reader bridge (NVDA/JAWS support)
             - `README.md` — Full documentation
             - `INSTALL.md` — Detailed installation guide
             - `LICENSE` — MIT License
-          files: Touchline-FM26-Installer.zip
+          files: |
+            Touchline-FM26-Installer.zip
+            tolk-x64.zip
           generate_release_notes: true
