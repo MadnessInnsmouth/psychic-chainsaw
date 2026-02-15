@@ -30,12 +30,6 @@ The mod is built as a BepInEx 6 plugin targeting .NET 6.0. It uses:
 | Focus patches | `Patches/FocusPatches.cs` | Harmony patches for focus events |
 | Configuration | `Config/TouchlineConfig.cs` | BepInEx config entries |
 
-### Previous Work (Prototype)
-
-The `prototype/` directory contains the original Python proof-of-concept with
-simulated FM26 screens using pyttsx3. This was used to validate accessibility
-patterns before building the real BepInEx mod.
-
 ---
 
 **Version**: 0.2.0

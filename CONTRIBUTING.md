@@ -1,4 +1,4 @@
-# Contributing to Project Touchline
+# Contributing to Touchline
 
 Thank you for your interest in making Football Manager more accessible! We welcome contributions from everyone.
 
@@ -7,8 +7,9 @@ Thank you for your interest in making Football Manager more accessible! We welco
 ### Reporting Issues
 - Use the GitHub issue tracker to report bugs
 - Describe the issue clearly with steps to reproduce
-- Include your operating system and Python version
+- Include your operating system, .NET SDK version, and FM26 version
 - Mention if you're using a screen reader (NVDA, JAWS, etc.)
+- Include relevant logs from `BepInEx/LogOutput.log`
 
 ### Suggesting Features
 - Check existing issues to avoid duplicates
@@ -24,31 +25,63 @@ Thank you for your interest in making Football Manager more accessible! We welco
 6. Push to your branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
+## Development Setup
+
+### Prerequisites
+- .NET 6.0 SDK or later
+- Football Manager 26 (for full builds)
+- Visual Studio 2022, VS Code, or Rider (optional)
+- BepInEx 6.x IL2CPP
+
+### Building from Source
+See [BUILDING.md](BUILDING.md) for complete build instructions. Quick start:
+
+```bash
+# Build without game installed (uses stubs)
+dotnet build TouchlineMod.sln -c Release
+
+# Build with game installed (full assemblies)
+export FM26_PATH="/path/to/Football Manager 26"
+dotnet build TouchlineMod.sln -c Release
+```
+
 ## Development Guidelines
 
 ### Code Style
-- Follow PEP 8 Python style guidelines
+- Follow standard C# coding conventions
 - Use clear, descriptive variable names
-- Add docstrings to all functions and classes
-- Include type hints where appropriate
+- Add XML documentation comments to public APIs
+- Keep methods focused and single-purpose
+- Use dependency injection where appropriate
+
+### Project Structure
+- `Core/` — Core functionality (speech, accessibility manager, text cleaning)
+- `Navigation/` — Focus tracking and accessible element models
+- `UI/` — UI scanning and text extraction from Unity components
+- `Patches/` — Harmony patches for FM26 event hooks
+- `Config/` — BepInEx configuration definitions
 
 ### Accessibility First
-- All UI elements must be keyboard-accessible
-- Provide clear, descriptive text for narration
-- Test with screen readers when possible
+- All features must work with keyboard navigation
+- Provide clear, descriptive announcements for screen readers
+- Test with NVDA or JAWS when possible
 - Consider users with different accessibility needs
+- Avoid overwhelming users with too much information
 
 ### Testing
-- Test all new features manually
+- Test all new features manually with the game
 - Verify keyboard navigation works correctly
 - Check that narration is clear and helpful
+- Test with screen readers (NVDA or JAWS)
 - Ensure no regressions in existing features
+- Check BepInEx logs for errors or warnings
 
-### Documentation
-- Update README.md for significant changes
-- Document new hotkeys in hotkeys_config.json
-- Add examples to sample_outputs.txt
-- Update roadmap.txt for feature status
+### BepInEx Best Practices
+- Use `Logger.LogInfo/LogWarning/LogError` for logging
+- Respect BepInEx configuration system
+- Use Harmony patches sparingly and carefully
+- Handle Unity IL2CPP types correctly (use Il2Cpp prefix)
+- Test both with and without game installed
 
 ## Priority Areas for Contribution
 
@@ -57,25 +90,28 @@ Thank you for your interest in making Football Manager more accessible! We welco
 - User experience feedback from blind gamers
 - Bug fixes and stability improvements
 - Documentation improvements
+- Game version compatibility updates
 
 ### Medium Priority
-- Phase 2 features (player search, transfers, training)
+- Enhanced navigation for specific screens (tactics, transfers, training)
 - Performance optimizations
 - Additional keyboard shortcuts
-- Better error handling
+- Better error handling and recovery
+- Configuration UI improvements
 
 ### Future/Experimental
-- Direct screen reader integration
 - Audio cues and sound effects
-- Voice command support
-- Mobile companion app
+- Braille display output via Tolk
+- Custom voice profiles
+- Multi-language support
 
 ## Getting Help
 
-- Check existing documentation in README.md
-- Look at sample code in screens/ directory
+- Check existing documentation: [README.md](README.md), [BUILDING.md](BUILDING.md), [INSTALL.md](INSTALL.md)
+- Review [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for architecture overview
+- Look at existing code in `src/TouchlineMod/` for examples
 - Ask questions in GitHub Discussions
-- Review sample_outputs.txt for expected behavior
+- Check BepInEx documentation for plugin development
 
 ## Community Guidelines
 
@@ -88,10 +124,20 @@ Thank you for your interest in making Football Manager more accessible! We welco
 ## Testing with Screen Readers
 
 If you have access to NVDA or JAWS:
-1. Run the demo: `python main.py --demo`
-2. Test individual screens
-3. Report any issues with screen reader compatibility
-4. Suggest improvements for better screen reader support
+1. Build and install the mod following [BUILDING.md](BUILDING.md)
+2. Launch FM26 with your screen reader running
+3. Test navigation and features
+4. Report any issues with screen reader compatibility
+5. Suggest improvements for better screen reader support
+
+## Pull Request Guidelines
+
+- Provide a clear description of the changes
+- Reference any related issues
+- Include testing steps
+- Update documentation if needed
+- Ensure the build succeeds
+- Keep changes focused and minimal
 
 ## Recognition
 

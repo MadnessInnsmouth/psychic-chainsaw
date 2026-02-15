@@ -121,10 +121,6 @@ psychic-chainsaw/
 │   ├── UI/                     # UI scanning, text extraction
 │   ├── Patches/                # Harmony patches for FM26 events & match day
 │   └── Config/                 # BepInEx configuration
-├── prototype/                  # Original Python proof-of-concept
-│   ├── core/                   # Python TTS & input handling
-│   ├── screens/                # Simulated FM26 screens
-│   └── utils/                  # Configuration & logging
 ├── libs/                       # Game library reference info
 ├── TouchlineMod.sln            # .NET solution file
 ├── INSTALL.md                  # Installation guide
@@ -162,16 +158,6 @@ This approach leverages the game's existing keyboard navigation rather than impl
 - [ ] Transfer market accessibility
 - [ ] Audio cues for key events
 - [ ] Braille display output via Tolk
-
-## Prototype
-
-The `prototype/` directory contains the original Python proof-of-concept that simulates FM26 screens with pyttsx3 text-to-speech. It was used to validate the accessibility design before building the real BepInEx mod. To run it:
-
-```bash
-cd prototype
-pip install pyttsx3
-python demo.py
-```
 
 ## Acknowledgments
 
