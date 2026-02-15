@@ -80,11 +80,10 @@ function Stop-And-Merge-Transcript {
     # Merge transcript into the main log file
     if (Test-Path $TranscriptFile) {
         try {
-            # Read transcript content in chunks to avoid memory issues with large files
+            # Stream transcript content to log file
             Add-Content -Path $LogFile -Value "`n`n============================================================`n"
             Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
             Add-Content -Path $LogFile -Value "============================================================`n"
-            # Stream content directly for efficient processing
             Get-Content $TranscriptFile -ErrorAction Stop | Add-Content -Path $LogFile
             Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
         } catch {
