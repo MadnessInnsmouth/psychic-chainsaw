@@ -32,6 +32,8 @@ namespace TouchlineMod.Navigation
         private bool _tableHeadersAnnounced;
         private List<string> _cachedHeaders;
 
+        private const int MaxParentContextDepth = 10;
+
         private void Update()
         {
             TrackFocus();
@@ -203,7 +205,7 @@ namespace TouchlineMod.Navigation
         {
             var parent = obj.transform.parent;
             int depth = 0;
-            while (parent != null && depth < 10)
+            while (parent != null && depth < MaxParentContextDepth)
             {
                 string name = parent.name;
                 string lower = name.ToLower();

@@ -30,6 +30,11 @@ namespace TouchlineMod.Patches
         private bool _matchTypesAvailable;
 
         private const float PollInterval = 0.5f;
+        private const int HalfTime = 45;
+        private const int FullTime = 90;
+        private const int ExtraTimeHalf = 105;
+        private const int ExtraTimeFull = 120;
+        private const int MaxChildScanDepth = 50;
 
         private void Awake()
         {
@@ -193,7 +198,8 @@ namespace TouchlineMod.Patches
                         if (minute != _lastMinute && minute > 0)
                         {
                             // Announce key time milestones
-                            if (minute == 45 || minute == 90 || minute == 105 || minute == 120
+                            if (minute == HalfTime || minute == FullTime
+                                || minute == ExtraTimeHalf || minute == ExtraTimeFull
                                 || _lastMinute == -1)
                             {
                                 SpeechOutput.Speak($"Minute {minute}", false);
@@ -324,7 +330,7 @@ namespace TouchlineMod.Patches
             }
 
             // Scan children (limit depth to avoid performance issues)
-            for (int i = 0; i < parent.childCount && i < 50; i++)
+            for (int i = 0; i < parent.childCount && i < MaxChildScanDepth; i++)
             {
                 var child = parent.GetChild(i);
                 if (child != null && child.gameObject.activeInHierarchy)

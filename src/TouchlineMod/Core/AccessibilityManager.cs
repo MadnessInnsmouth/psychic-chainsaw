@@ -25,6 +25,8 @@ namespace TouchlineMod.Core
         private string _lastScreenContent = string.Empty;
         private float _contentPollTimer;
         private const float ContentPollInterval = 2.0f;
+        private const int MaxScreenTextItems = 50;
+        private const int MaxTextCollectionDepth = 15;
 
         private void Awake()
         {
@@ -226,7 +228,7 @@ namespace TouchlineMod.Core
         /// </summary>
         private void CollectVisibleText(Transform parent, List<string> texts, int depth)
         {
-            if (parent == null || depth > 15) return;
+            if (parent == null || depth > MaxTextCollectionDepth) return;
             if (!parent.gameObject.activeInHierarchy) return;
 
             string text = TextExtractor.ExtractDirect(parent.gameObject);
@@ -240,7 +242,7 @@ namespace TouchlineMod.Core
             }
 
             // Limit total text to prevent extremely long announcements
-            if (texts.Count >= 50) return;
+            if (texts.Count >= MaxScreenTextItems) return;
 
             for (int i = 0; i < parent.childCount; i++)
             {
