@@ -60,6 +60,30 @@ function Write-Log {
     Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
 }
 
+function Stop-And-Merge-Transcript {
+    # Safely stop transcript and merge it into the main log file
+    try {
+        Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+    } catch {
+        # Transcript wasn't running, ignore
+    }
+    
+    # Merge transcript into the main log file
+    if (Test-Path $TranscriptFile) {
+        try {
+            $transcriptContent = Get-Content $TranscriptFile -Raw
+            Add-Content -Path $LogFile -Value "`n`n============================================================`n"
+            Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
+            Add-Content -Path $LogFile -Value "============================================================`n"
+            Add-Content -Path $LogFile -Value $transcriptContent
+            Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+        } catch {
+            # If merge fails, log the error but continue
+            Write-Log "Failed to merge transcript: $($_.Exception.Message)" "WARN"
+        }
+    }
+}
+
 # --- Version Configuration ---
 $BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
@@ -543,15 +567,7 @@ Write-Log "=== INSTALLATION COMPLETED ===" "INFO"
     Write-Host ""
     
     # Stop transcript and merge it into the main log file even on error
-    Stop-Transcript
-    if (Test-Path $TranscriptFile) {
-        $transcriptContent = Get-Content $TranscriptFile -Raw
-        Add-Content -Path $LogFile -Value "`n`n============================================================`n"
-        Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
-        Add-Content -Path $LogFile -Value "============================================================`n"
-        Add-Content -Path $LogFile -Value $transcriptContent
-        Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
-    }
+    Stop-And-Merge-Transcript
     
     Read-Host "Press Enter to exit"
     exit 1
@@ -590,14 +606,4 @@ Write-Host "============================================================" -Foreg
 Write-Host ""
 
 # Stop transcript and merge it into the main log file
-Stop-Transcript
-
-# Merge transcript into the main log file
-if (Test-Path $TranscriptFile) {
-    $transcriptContent = Get-Content $TranscriptFile -Raw
-    Add-Content -Path $LogFile -Value "`n`n============================================================`n"
-    Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
-    Add-Content -Path $LogFile -Value "============================================================`n"
-    Add-Content -Path $LogFile -Value $transcriptContent
-    Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
-}
+Stop-And-Merge-Transcript
