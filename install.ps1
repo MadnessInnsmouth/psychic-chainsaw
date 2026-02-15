@@ -366,7 +366,8 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
                 Read-Host "   Press Enter after you've closed the game"
             } else {
                 Write-Host "   Game process has exited." -ForegroundColor Gray
-                # Give BepInEx time to finish writing interop files to disk
+                # BepInEx writes interop assemblies asynchronously after the game
+                # process exits; allow enough time for disk I/O to complete.
                 Start-Sleep -Seconds 5
             }
 

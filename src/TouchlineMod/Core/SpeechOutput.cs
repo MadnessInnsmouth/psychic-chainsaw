@@ -129,7 +129,12 @@ namespace TouchlineMod.Core
             {
                 if (handle != IntPtr.Zero)
                 {
-                    try { FreeLibrary(handle); } catch { }
+                    try { FreeLibrary(handle); }
+                    catch (Exception ex)
+                    {
+                        // Best-effort cleanup during process exit; log if possible.
+                        Log?.LogWarning($"Failed to free companion library: {ex.Message}");
+                    }
                 }
             }
             _companionLibraryHandles.Clear();
