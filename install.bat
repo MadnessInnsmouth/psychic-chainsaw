@@ -21,8 +21,21 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: Run the PowerShell installer with bypass execution policy
-powershell -ExecutionPolicy Bypass -File "%~dp0install.ps1"
+:: Redirect all output to ensure errors are captured
+powershell -ExecutionPolicy Bypass -File "%~dp0install.ps1" 2>&1
+
+:: Capture the exit code
+set INSTALLER_EXIT_CODE=%ERRORLEVEL%
 
 echo.
+if "%INSTALLER_EXIT_CODE%" neq "0" (
+    echo Installation failed with exit code: %INSTALLER_EXIT_CODE%
+    echo Check touchline-installer.log for details.
+    echo.
+)
+
 echo Press any key to close...
 pause >nul
+
+:: Exit with the installer's exit code
+exit /b %INSTALLER_EXIT_CODE%

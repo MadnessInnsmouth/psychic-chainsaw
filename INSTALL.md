@@ -160,7 +160,8 @@ You can edit this file to customize:
 
 If the installer fails or behaves unexpectedly:
 - Check the **installer log file** at `touchline-installer.log` (in the same folder as `install.bat`)
-- The log contains detailed information about each installation step, including errors and system information
+- The log contains detailed information about each installation step, including **all console output, errors, and warnings**
+- The log captures everything that appears in the terminal window automatically
 - Share the contents of this log file when reporting issues — it helps diagnose problems quickly
 - The log file is automatically cleared each time you run the installer, so it always contains fresh information
 

@@ -23,10 +23,23 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # --- Logging Configuration ---
 $LogFile = Join-Path $ScriptDir "touchline-installer.log"
+$TranscriptFile = Join-Path $ScriptDir "touchline-installer-transcript.log"
 
-# Clear previous log file and start fresh
+# Clear previous log files and start fresh
 if (Test-Path $LogFile) {
     Remove-Item $LogFile -Force -ErrorAction SilentlyContinue
+}
+if (Test-Path $TranscriptFile) {
+    Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+}
+
+# Start transcript to capture ALL console output
+try {
+    Start-Transcript -Path $TranscriptFile -Append:$false
+} catch {
+    # If transcript can't start (e.g., permissions), log a warning and continue
+    Write-Log "Warning: Could not start transcript logging: $($_.Exception.Message)" "WARN"
+    Write-Log "Installation will continue, but console output may not be fully captured." "WARN"
 }
 
 # Initialize log file with timestamp and system info
@@ -51,6 +64,39 @@ function Write-Log {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] [$Level] $Message"
     Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
+}
+
+function Stop-And-Merge-Transcript {
+    # Safely stop transcript and merge it into the main log file
+    try {
+        Stop-Transcript
+    } catch [System.Management.Automation.PSInvalidOperationException] {
+        # Transcript wasn't running or already stopped, this is expected in some cases
+    } catch {
+        # Log unexpected errors but continue
+        Write-Log "Unexpected error stopping transcript: $($_.Exception.Message)" "WARN"
+    }
+    
+    # Merge transcript into the main log file
+    if (Test-Path $TranscriptFile) {
+        try {
+            # Add section header
+            $header = @"
+
+
+============================================================
+FULL CONSOLE OUTPUT (Transcript)
+============================================================
+"@
+            Add-Content -Path $LogFile -Value $header
+            # Stream transcript content efficiently
+            Get-Content $TranscriptFile -ErrorAction Stop | Add-Content -Path $LogFile
+            Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+        } catch {
+            # If merge fails, log the error but continue
+            Write-Log "Failed to merge transcript: $($_.Exception.Message)" "WARN"
+        }
+    }
 }
 
 # --- Version Configuration ---
@@ -534,6 +580,10 @@ Write-Log "=== INSTALLATION COMPLETED ===" "INFO"
     Write-Host "   2. See INSTALL.md for troubleshooting guidance" -ForegroundColor Gray
     Write-Host "   3. Report issues at: https://github.com/MadnessInnsmouth/psychic-chainsaw/issues" -ForegroundColor Gray
     Write-Host ""
+    
+    # Stop transcript and merge it into the main log file even on error
+    Stop-And-Merge-Transcript
+    
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -569,3 +619,6 @@ Write-Host "  Share this file when reporting issues." -ForegroundColor Gray
 
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Stop transcript and merge it into the main log file
+Stop-And-Merge-Transcript

@@ -46,7 +46,7 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 
 **Offline Installation**: The installer works completely offline if you have the required DLLs anywhere on your computer. It will automatically find and use existing installations of BepInEx and Tolk instead of downloading them.
 
-**Troubleshooting**: If the installer encounters issues, check the `touchline-installer.log` file created in the same folder as `install.bat`. This log contains detailed information about each step and can help diagnose problems.
+**Troubleshooting**: If the installer encounters issues, check the `touchline-installer.log` file created in the same folder as `install.bat`. This log contains detailed information about each step, **including all console output, errors, and warnings**. Everything that appears in the terminal window is automatically captured in the log file.
 
 ### Manual Install
 
