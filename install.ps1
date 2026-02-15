@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"  # Speed up Invoke-WebRequest
 
 # --- Version Configuration ---
-$BepInExVersion = "6.0.0-be.762"
+$BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
 $TolkUrl = "https://github.com/dkager/tolk/releases/latest/download/tolk-x64.zip"
 $TouchlineReleasesApi = "https://api.github.com/repos/MadnessInnsmouth/psychic-chainsaw/releases/latest"
@@ -142,9 +142,19 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
         Write-Warn "Could not download BepInEx from primary URL."
         Write-Host "   Trying alternate URL..." -ForegroundColor Gray
         try {
-            $altUrl = "https://builds.bepinex.dev/projects/bepinex_be/762/BepInEx-Unity.IL2CPP-win-x64-6.0.0-be.762%2B062d7d0.zip"
-            Invoke-WebRequest -Uri $altUrl -OutFile $bepZip -UseBasicParsing
-            Write-Ok "Downloaded BepInEx from alternate source"
+            # Fallback: query GitHub API for the latest BepInEx 6 pre-release asset
+            Write-Host "   Querying GitHub API for latest BepInEx release..." -ForegroundColor Gray
+            $bepReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/BepInEx/BepInEx/releases" -UseBasicParsing -ErrorAction Stop
+            $bepRelease = $bepReleases | Where-Object { $_.tag_name -match "^v6\." } | Select-Object -First 1
+            if (-not $bepRelease) {
+                throw "No BepInEx 6.x release found on GitHub"
+            }
+            $bepAsset = $bepRelease.assets | Where-Object { $_.name -match "IL2CPP-win-x64" } | Select-Object -First 1
+            if (-not $bepAsset) {
+                throw "No matching BepInEx IL2CPP win-x64 asset found"
+            }
+            Invoke-WebRequest -Uri $bepAsset.browser_download_url -OutFile $bepZip -UseBasicParsing
+            Write-Ok "Downloaded BepInEx from GitHub API (v$($bepRelease.tag_name))"
         } catch {
             Write-Err "Failed to download BepInEx. Please download it manually from:"
             Write-Host "   https://github.com/BepInEx/BepInEx/releases" -ForegroundColor Yellow
