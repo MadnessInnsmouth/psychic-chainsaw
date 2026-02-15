@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using BepInEx.Logging;
 
@@ -15,6 +17,111 @@ namespace TouchlineMod.Core
         private static bool _initialized;
         private static bool _tolkAvailable;
         private static bool _sapiAvailable;
+
+        #region Windows DLL Loading
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetDllDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr AddDllDirectory(string lpPathName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetDefaultDllDirectories(uint directoryFlags);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FreeLibrary(IntPtr hModule);
+
+        private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
+        private static volatile IntPtr _tolkLibraryHandle = IntPtr.Zero;
+
+        /// <summary>
+        /// Static constructor to set up DLL search path before any P/Invoke calls.
+        /// This ensures Tolk.dll and its dependencies are loaded from the mod folder.
+        /// </summary>
+        static SpeechOutput()
+        {
+            try
+            {
+                // Get the directory where this assembly (TouchlineMod.dll) is located
+                string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+                string modDirectory = Path.GetDirectoryName(assemblyLocation);
+
+                if (!string.IsNullOrEmpty(modDirectory) && Directory.Exists(modDirectory))
+                {
+                    // Use AddDllDirectory instead of SetDllDirectory to preserve default search paths
+                    // This is safer and doesn't break loading of other DLLs
+                    try
+                    {
+                        // Per Windows documentation: AddDllDirectory must be called before SetDefaultDllDirectories
+                        IntPtr dirHandle = AddDllDirectory(modDirectory);
+                        if (dirHandle == IntPtr.Zero)
+                        {
+                            int errorCode = Marshal.GetLastWin32Error();
+                            Console.WriteLine($"[Touchline] Warning: AddDllDirectory failed (error code: {errorCode}). Falling back to SetDllDirectory.");
+                            SetDllDirectory(modDirectory);
+                        }
+                        else
+                        {
+                            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+                        }
+                    }
+                    catch (EntryPointNotFoundException)
+                    {
+                        // AddDllDirectory is not available on older Windows versions, fall back to SetDllDirectory
+                        SetDllDirectory(modDirectory);
+                    }
+
+                    // Pre-load Tolk.dll from the mod directory to ensure it's found
+                    string tolkPath = Path.Combine(modDirectory, "Tolk.dll");
+                    if (File.Exists(tolkPath))
+                    {
+                        _tolkLibraryHandle = LoadLibrary(tolkPath);
+                        if (_tolkLibraryHandle == IntPtr.Zero)
+                        {
+                            int errorCode = Marshal.GetLastWin32Error();
+                            Console.WriteLine($"[Touchline] Warning: Failed to pre-load Tolk.dll (error code: {errorCode}). Will attempt standard loading.");
+                        }
+                    }
+                }
+
+                // Register cleanup on process exit to ensure proper resource cleanup
+                // Note: ProcessExit handlers are intentionally not unregistered as they persist
+                // for the lifetime of the AppDomain, ensuring cleanup even if Shutdown() isn't called.
+                AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupTolkLibrary();
+            }
+            catch (Exception ex)
+            {
+                // If this fails, we'll fall back to the default DLL search behavior
+                // The Log may not be initialized yet, so we can't log here
+                Console.WriteLine($"[Touchline] Failed to set DLL directory: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Clean up the manually loaded Tolk library handle.
+        /// This method is safe to call multiple times (e.g., from both Shutdown() and ProcessExit).
+        /// </summary>
+        private static void CleanupTolkLibrary()
+        {
+            if (_tolkLibraryHandle != IntPtr.Zero)
+            {
+                try
+                {
+                    FreeLibrary(_tolkLibraryHandle);
+                    _tolkLibraryHandle = IntPtr.Zero;
+                }
+                catch (Exception ex)
+                {
+                    Log?.LogWarning($"Failed to free Tolk library: {ex.Message}");
+                }
+            }
+        }
+
+        #endregion
 
         #region Tolk Native Methods
 
@@ -260,6 +367,8 @@ namespace TouchlineMod.Core
                 _sapiAvailable = false;
             }
 
+            // Explicitly cleanup Tolk library (also registered with ProcessExit for redundancy)
+            CleanupTolkLibrary();
             _initialized = false;
         }
 

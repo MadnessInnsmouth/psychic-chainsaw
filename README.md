@@ -140,6 +140,10 @@ Touchline monitors FM26's `FMNavigationManager.CurrentFocus` property to detect 
 
 This approach leverages the game's existing keyboard navigation rather than implementing custom navigation, ensuring compatibility with game updates.
 
+### DLL Loading
+
+Touchline automatically loads Tolk.dll and its companion libraries (nvdaControllerClient64.dll, SAAPI64.dll) from the mod folder (`BepInEx/plugins/TouchlineMod/`) rather than requiring them in the game's root directory. This is achieved by setting the DLL search path to the mod directory before any native calls are made, keeping the game folder clean and making installation simpler.
+
 ## Roadmap
 
 - [x] Core plugin architecture (BepInEx 6, Harmony, IL2CPP)
