@@ -36,11 +36,15 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 2. Extract the ZIP anywhere on your computer
 3. Double-click **`install.bat`** — it does everything automatically:
    - Finds your FM26 installation (Steam, Epic, or Xbox Game Pass)
-   - Downloads and installs BepInEx (mod framework)
-   - Downloads and installs Tolk (screen reader bridge)
+   - Searches your computer for required DLLs (BepInEx, Tolk) first
+   - Downloads any missing files from the internet if needed
+   - Installs BepInEx (mod framework)
+   - Installs Tolk (screen reader bridge)
    - Installs the Touchline accessibility mod
 4. Start **NVDA** (or JAWS), then launch FM26
 5. You should hear "Touchline accessibility mod loaded"
+
+**Offline Installation**: The installer works completely offline if you have the required DLLs anywhere on your computer. It will automatically find and use existing installations of BepInEx and Tolk instead of downloading them.
 
 ### Manual Install
 
@@ -113,7 +117,9 @@ See [BUILDING.md](BUILDING.md) for complete build instructions.
 ```
 psychic-chainsaw/
 ├── install.bat                 # One-click installer (double-click to run)
-├── install.ps1                 # PowerShell installer script
+├── install.ps1                 # PowerShell installer script (flexible, searches local system)
+├── package-installer.ps1       # Create bundled installer packages
+├── create-packages.bat         # Helper to build distribution packages
 ├── src/TouchlineMod/           # C# BepInEx plugin (the actual mod)
 │   ├── Plugin.cs               # BepInEx entry point
 │   ├── Core/                   # Speech output, text cleaning, manager
@@ -125,8 +131,26 @@ psychic-chainsaw/
 ├── TouchlineMod.sln            # .NET solution file
 ├── INSTALL.md                  # Installation guide
 ├── BUILDING.md                 # Build from source guide
+├── DISTRIBUTION.md             # Guide for bundling and distribution options
 └── README.md                   # This file
 ```
+
+## Distribution & Packaging
+
+The installer supports both online and offline installation:
+
+- **Online mode**: Automatically downloads required files from the internet
+- **Offline mode**: Searches your entire computer for existing DLL files first
+- **Bundled mode**: Include all DLLs in the installer package for complete offline use
+
+To create a bundled installer package:
+```powershell
+.\package-installer.ps1
+```
+
+This creates `Touchline-FM26-Installer.zip` with all dependencies included.
+
+See [DISTRIBUTION.md](DISTRIBUTION.md) for detailed packaging and distribution options.
 
 ## How It Works
 

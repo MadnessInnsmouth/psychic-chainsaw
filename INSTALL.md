@@ -9,8 +9,11 @@ The easiest way to install Touchline is the one-click installer:
 
 The installer automatically:
 - Finds your Football Manager 2026 installation (Steam, Epic Games, or Xbox Game Pass)
-- Downloads and installs BepInEx 6 (the mod framework)
-- Downloads and installs Tolk (screen reader bridge for NVDA/JAWS)
+- **Searches your computer for existing BepInEx installations** (checks all drives and common locations)
+- **Searches for Tolk DLLs on your system** (in Downloads, Program Files, and other common locations)
+- Downloads any missing files from the internet only if not found locally
+- Installs BepInEx 6 (the mod framework)
+- Installs Tolk (screen reader bridge for NVDA/JAWS)
 - Installs the Touchline accessibility mod
 
 After installation:
@@ -19,6 +22,31 @@ After installation:
 3. You should hear "Touchline accessibility mod loaded"
 
 > **Note**: If the installer can't find FM26 automatically, it will ask you to enter the path.
+
+## Offline Installation
+
+The installer is designed to work **completely offline** if you already have the required files:
+
+### What the installer searches for:
+- **BepInEx**: Searches all fixed drives, Program Files, common game directories
+- **Tolk DLLs**: Searches Downloads folder, script directory, all drives
+- **TouchlineMod.dll**: Searches locally built versions, script directory, and your system
+
+### To prepare for offline installation:
+1. Download the required files once (from another computer if needed)
+2. Place them anywhere on your computer:
+   - Put BepInEx zip in your Downloads folder or script directory
+   - Put tolk-x64.zip or extracted DLLs in Downloads or script directory
+   - The installer will find them automatically
+3. Run `install.bat` - it will use the local files instead of downloading
+
+### Creating a bundled installer:
+Run `package-installer.ps1` to create a single ZIP containing everything:
+```powershell
+.\package-installer.ps1
+```
+
+This creates `Touchline-FM26-Installer.zip` with all dependencies included for fully offline installation.
 
 ---
 
