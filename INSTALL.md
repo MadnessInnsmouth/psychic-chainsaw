@@ -155,13 +155,20 @@ You can edit this file to customize:
 ## Troubleshooting
 
 ### Game starts but closes immediately
-- **On the very first launch after installing BepInEx**, the game will start and then shut down automatically. This is expected — BepInEx generates interop assemblies on the first run and the game exits during this process. Simply launch the game again.
-- If it keeps closing after the first run, check `BepInEx/LogOutput.log` for errors.
+- **On the very first launch after installing BepInEx**, the game will start and then shut down automatically. This is expected — BepInEx generates interop assemblies on the first run and the game exits during this process. Simply launch the game again and it will work normally.
+- **On the second launch**, if the game still closes, check that `BepInEx/interop/` contains `.dll` files. If not, try running the game once more — BepInEx sometimes needs two launches to finish generating everything.
+- If the game keeps closing, check `BepInEx/LogOutput.log` for errors.
 - Make sure you're using the correct BepInEx version (Unity IL2CPP x64).
+- Verify `winhttp.dll` (the BepInEx doorstop) exists in your FM26 game folder next to the game `.exe`.
+
+### NVDA not detected
+- Ensure NVDA is running **before** launching the game.
+- Verify that **both** `Tolk.dll` **and** `nvdaControllerClient64.dll` are in the `BepInEx/plugins/TouchlineMod/` folder. Tolk.dll needs the NVDA controller DLL to communicate with NVDA.
+- Check `BepInEx/LogOutput.log` for messages from Touchline about screen reader detection.
 
 ### No speech output
 - Ensure NVDA (or JAWS) is running before launching the game.
-- Verify `Tolk.dll` (x64) is in the plugin folder.
+- Verify `Tolk.dll` (x64) and its companion DLLs (`nvdaControllerClient64.dll`, `SAAPI64.dll`) are all in the plugin folder.
 - Check `BepInEx/LogOutput.log` for error messages from Touchline.
 
 ### Mod not loading

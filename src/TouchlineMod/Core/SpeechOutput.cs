@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -24,23 +25,34 @@ namespace TouchlineMod.Core
         private static extern bool SetDllDirectory(string lpPathName);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr AddDllDirectory(string lpPathName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetDefaultDllDirectories(uint directoryFlags);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr LoadLibrary(string lpFileName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool FreeLibrary(IntPtr hModule);
 
-        private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
         private static volatile IntPtr _tolkLibraryHandle = IntPtr.Zero;
+        private static readonly List<IntPtr> _companionLibraryHandles = new List<IntPtr>();
+
+        // Tolk companion DLLs that must be loadable for screen reader support.
+        // These are loaded by Tolk at runtime via LoadLibrary; pre-loading them
+        // from the mod folder ensures they are found even though the mod folder
+        // is not on the default DLL search path.
+        private static readonly string[] TolkCompanionDlls = new[]
+        {
+            "nvdaControllerClient64.dll",
+            "SAAPI64.dll"
+        };
 
         /// <summary>
         /// Static constructor to set up DLL search path before any P/Invoke calls.
         /// This ensures Tolk.dll and its dependencies are loaded from the mod folder.
+        ///
+        /// IMPORTANT: We must NOT call SetDefaultDllDirectories here because it
+        /// changes the process-wide DLL search order and can prevent the game and
+        /// BepInEx from finding their own native libraries, causing the game to
+        /// crash on startup. Instead we use SetDllDirectory (which only adds one
+        /// extra search directory) and explicitly pre-load every native DLL that
+        /// the mod needs.
         /// </summary>
         static SpeechOutput()
         {
@@ -52,27 +64,31 @@ namespace TouchlineMod.Core
 
                 if (!string.IsNullOrEmpty(modDirectory) && Directory.Exists(modDirectory))
                 {
-                    // Use AddDllDirectory instead of SetDllDirectory to preserve default search paths
-                    // This is safer and doesn't break loading of other DLLs
-                    try
+                    // Use SetDllDirectory to add the mod folder to the DLL search path.
+                    // Unlike SetDefaultDllDirectories, this does not remove the standard
+                    // search locations (application dir, system32, etc.) so it is safe to
+                    // call in a hosted process such as a game.
+                    SetDllDirectory(modDirectory);
+
+                    // Pre-load Tolk companion DLLs (e.g. nvdaControllerClient64.dll) so
+                    // that when Tolk_Load() runs it can find them.  These must be loaded
+                    // BEFORE Tolk.dll itself because Tolk resolves them at load time.
+                    foreach (string companionDll in TolkCompanionDlls)
                     {
-                        // Per Windows documentation: AddDllDirectory must be called before SetDefaultDllDirectories
-                        IntPtr dirHandle = AddDllDirectory(modDirectory);
-                        if (dirHandle == IntPtr.Zero)
+                        string companionPath = Path.Combine(modDirectory, companionDll);
+                        if (File.Exists(companionPath))
                         {
-                            int errorCode = Marshal.GetLastWin32Error();
-                            Console.WriteLine($"[Touchline] Warning: AddDllDirectory failed (error code: {errorCode}). Falling back to SetDllDirectory.");
-                            SetDllDirectory(modDirectory);
+                            IntPtr handle = LoadLibrary(companionPath);
+                            if (handle != IntPtr.Zero)
+                            {
+                                _companionLibraryHandles.Add(handle);
+                            }
+                            else
+                            {
+                                int errorCode = Marshal.GetLastWin32Error();
+                                Console.WriteLine($"[Touchline] Warning: Failed to pre-load {companionDll} (error code: {errorCode}).");
+                            }
                         }
-                        else
-                        {
-                            SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-                        }
-                    }
-                    catch (EntryPointNotFoundException)
-                    {
-                        // AddDllDirectory is not available on older Windows versions, fall back to SetDllDirectory
-                        SetDllDirectory(modDirectory);
                     }
 
                     // Pre-load Tolk.dll from the mod directory to ensure it's found
@@ -91,7 +107,7 @@ namespace TouchlineMod.Core
                 // Register cleanup on process exit to ensure proper resource cleanup
                 // Note: ProcessExit handlers are intentionally not unregistered as they persist
                 // for the lifetime of the AppDomain, ensuring cleanup even if Shutdown() isn't called.
-                AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupTolkLibrary();
+                AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupNativeLibraries();
             }
             catch (Exception ex)
             {
@@ -102,11 +118,22 @@ namespace TouchlineMod.Core
         }
 
         /// <summary>
-        /// Clean up the manually loaded Tolk library handle.
+        /// Clean up all manually loaded native library handles.
         /// This method is safe to call multiple times (e.g., from both Shutdown() and ProcessExit).
+        /// Companion DLLs are freed first, then Tolk itself, to respect dependency order.
         /// </summary>
-        private static void CleanupTolkLibrary()
+        private static void CleanupNativeLibraries()
         {
+            // Free companion libraries first (they are dependencies of Tolk)
+            foreach (IntPtr handle in _companionLibraryHandles)
+            {
+                if (handle != IntPtr.Zero)
+                {
+                    try { FreeLibrary(handle); } catch { }
+                }
+            }
+            _companionLibraryHandles.Clear();
+
             if (_tolkLibraryHandle != IntPtr.Zero)
             {
                 try
@@ -367,8 +394,8 @@ namespace TouchlineMod.Core
                 _sapiAvailable = false;
             }
 
-            // Explicitly cleanup Tolk library (also registered with ProcessExit for redundancy)
-            CleanupTolkLibrary();
+            // Explicitly cleanup native libraries (also registered with ProcessExit for redundancy)
+            CleanupNativeLibraries();
             _initialized = false;
         }
 
