@@ -225,6 +225,14 @@ if (-not $FM26Path) {
         Read-Host "Press Enter to exit"
         exit 1
     }
+    # Verify this is actually the FM26 folder by checking for game executable
+    $testExe = @(Get-ChildItem "$FM26Path\*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Football Manager*" -or $_.Name -like "fm.exe" } | Select-Object -First 1)
+    if ($testExe.Count -eq 0) {
+        Write-Err "No Football Manager executable found in: $FM26Path"
+        Write-Host "   Please check the path and try again."
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
 }
 
 Write-Ok "Found FM26 at: $FM26Path"
@@ -261,8 +269,8 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
         )
         
         foreach ($zipPattern in $localZips) {
-            $foundZips = Get-ChildItem -Path $zipPattern -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
-            if ($foundZips) {
+            $foundZips = @(Get-ChildItem -Path $zipPattern -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+            if ($foundZips.Count -gt 0) {
                 $bepZip = $foundZips[0].FullName
                 Write-Host "   Found local BepInEx archive: $bepZip" -ForegroundColor White
                 Write-Host "   Installing BepInEx..." -ForegroundColor White
@@ -325,7 +333,7 @@ Write-Step "Checking interop assemblies..."
 
 $interopDir = Join-Path $FM26Path "BepInEx\interop"
 
-if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue)).Count -gt 0) {
     Write-Ok "Interop assemblies already generated"
 } else {
     # Verify that the BepInEx doorstop (winhttp.dll) is in place — without it
@@ -355,8 +363,18 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
             Write-Host "   Press Enter to launch FM26..." -ForegroundColor Yellow
             Read-Host
 
-            $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru
-            Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
+            try {
+                $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru -ErrorAction Stop
+                Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
+            } catch {
+                Write-Err "Failed to start game: $($_.Exception.Message)"
+                Write-Host "   Error details: $($_.CategoryInfo.Category) - $($_.FullyQualifiedErrorId)" -ForegroundColor Gray
+                Write-Host "   This can happen if the game requires administrator privileges or if antivirus is blocking it." -ForegroundColor Yellow
+                if ($attempt -lt $maxAttempts) {
+                    Write-Host "   Will retry..." -ForegroundColor Yellow
+                }
+                continue
+            }
             Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
 
             # Wait up to 2 minutes (120000ms) for the game process to exit
@@ -379,7 +397,7 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
             }
 
             # Verify interop assemblies were generated
-            if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+            if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue)).Count -gt 0) {
                 Write-Ok "Interop assemblies generated successfully"
                 break
             } else {
@@ -428,8 +446,12 @@ if (Test-Path $tolkDll) {
         $tolkDlls = Get-ChildItem "$localTolkDir\*.dll" -ErrorAction SilentlyContinue
         $copiedCount = 0
         foreach ($dll in $tolkDlls) {
-            Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force -ErrorAction SilentlyContinue
-            $copiedCount++
+            try {
+                Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force -ErrorAction Stop
+                $copiedCount++
+            } catch {
+                Write-Host "   Warning: Failed to copy $($dll.Name): $_" -ForegroundColor Yellow
+            }
         }
         
         if ($copiedCount -gt 0) {
@@ -626,7 +648,7 @@ if (Test-Path $bepInExCoreDll) {
 }
 
 $interopDir = Join-Path $FM26Path "BepInEx\interop"
-if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue)).Count -gt 0) {
     Write-Ok "Interop assemblies: Generated"
 } else {
     Write-Warn "Interop assemblies: NOT FOUND"
