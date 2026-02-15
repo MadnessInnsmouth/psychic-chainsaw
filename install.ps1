@@ -23,11 +23,18 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # --- Logging Configuration ---
 $LogFile = Join-Path $ScriptDir "touchline-installer.log"
+$TranscriptFile = Join-Path $ScriptDir "touchline-installer-transcript.log"
 
-# Clear previous log file and start fresh
+# Clear previous log files and start fresh
 if (Test-Path $LogFile) {
     Remove-Item $LogFile -Force -ErrorAction SilentlyContinue
 }
+if (Test-Path $TranscriptFile) {
+    Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+}
+
+# Start transcript to capture ALL console output
+Start-Transcript -Path $TranscriptFile -Force
 
 # Initialize log file with timestamp and system info
 $logHeader = @"
@@ -534,6 +541,18 @@ Write-Log "=== INSTALLATION COMPLETED ===" "INFO"
     Write-Host "   2. See INSTALL.md for troubleshooting guidance" -ForegroundColor Gray
     Write-Host "   3. Report issues at: https://github.com/MadnessInnsmouth/psychic-chainsaw/issues" -ForegroundColor Gray
     Write-Host ""
+    
+    # Stop transcript and merge it into the main log file even on error
+    Stop-Transcript
+    if (Test-Path $TranscriptFile) {
+        $transcriptContent = Get-Content $TranscriptFile -Raw
+        Add-Content -Path $LogFile -Value "`n`n============================================================`n"
+        Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
+        Add-Content -Path $LogFile -Value "============================================================`n"
+        Add-Content -Path $LogFile -Value $transcriptContent
+        Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+    }
+    
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -569,3 +588,16 @@ Write-Host "  Share this file when reporting issues." -ForegroundColor Gray
 
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Stop transcript and merge it into the main log file
+Stop-Transcript
+
+# Merge transcript into the main log file
+if (Test-Path $TranscriptFile) {
+    $transcriptContent = Get-Content $TranscriptFile -Raw
+    Add-Content -Path $LogFile -Value "`n`n============================================================`n"
+    Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
+    Add-Content -Path $LogFile -Value "============================================================`n"
+    Add-Content -Path $LogFile -Value $transcriptContent
+    Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
+}
