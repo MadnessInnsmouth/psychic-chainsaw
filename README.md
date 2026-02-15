@@ -202,7 +202,7 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Version**: 0.3.0  
+**Version**: 0.4.0  
 **Status**: Functional BepInEx plugin — download from the [Releases page](../../releases/latest), run `install.bat`, and play  
 **Supported Stores**: Steam, Epic Games, Xbox Game Pass  
 **Last Updated**: February 2026
