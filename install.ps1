@@ -80,10 +80,10 @@ function Stop-And-Merge-Transcript {
     # Merge transcript into the main log file
     if (Test-Path $TranscriptFile) {
         try {
-            # Add section header efficiently
-            Add-Content -Path $LogFile -Value ("`n`n============================================================", "FULL CONSOLE OUTPUT (Transcript)", "============================================================")
-            # Stream transcript content line by line to avoid memory issues
-            Get-Content $TranscriptFile -ReadCount 1000 -ErrorAction Stop | ForEach-Object { Add-Content -Path $LogFile -Value $_ }
+            # Add section header as single write operation
+            Add-Content -Path $LogFile -Value ("`n`n============================================================`nFULL CONSOLE OUTPUT (Transcript)`n============================================================")
+            # Stream transcript content efficiently
+            Get-Content $TranscriptFile -ErrorAction Stop | Add-Content -Path $LogFile
             Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
         } catch {
             # If merge fails, log the error but continue
