@@ -7,13 +7,19 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 ## Features
 
 - **Focus-based announcements** — Automatically speaks the name, type, and state of the currently focused UI element
+- **Menu and screen reading** — Reads all menus, options, and screens; announces screen transitions and provides parent context
+- **Match day commentary** — Narrates live match events including score updates, goals, and commentary text
+- **Read entire screen** — Press Ctrl+Shift+R to hear all visible text on the current screen
 - **Table support** — Reads column headers and full row data when navigating tables
+- **List position tracking** — Announces "X of Y" position when navigating lists and tables
 - **Element state** — Announces checked/unchecked, selected, disabled states
 - **Screen transitions** — Announces when you navigate to a new screen
+- **Dynamic content detection** — Automatically announces popups, dialogs, and notifications
 - **Rich text cleanup** — Strips Unity markup tags for clean screen reader output
 - **UI deep scanner** — Debug tool that catalogs the entire UI hierarchy to a file
 - **Configurable** — All features can be toggled via BepInEx configuration
 - **Dual TTS backend** — Tolk (NVDA/JAWS) with Windows SAPI fallback
+- **One-click installer** — `install.bat` automates the entire setup process
 
 ## Requirements
 
@@ -23,6 +29,19 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 - [Tolk](https://github.com/dkager/tolk/releases) screen reader library
 
 ## Quick Start
+
+### One-Click Install (Recommended)
+
+1. Download the latest release from [Releases](../../releases)
+2. Double-click **`install.bat`** — it does everything automatically:
+   - Finds your FM26 installation
+   - Downloads and installs BepInEx (mod framework)
+   - Downloads and installs Tolk (screen reader bridge)
+   - Installs the Touchline accessibility mod
+3. Start **NVDA** (or JAWS), then launch FM26
+4. You should hear "Touchline accessibility mod loaded"
+
+### Manual Install
 
 1. Install BepInEx 6.x in your FM26 game folder
 2. Run the game once to generate interop assemblies
@@ -40,6 +59,8 @@ See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 | Ctrl+Shift+D | Toggle debug mode |
 | Ctrl+Shift+S | Deep scan UI (saves TouchlineUIScan.txt) |
 | Ctrl+Shift+W | "Where am I?" — Announce current focus |
+| Ctrl+Shift+M | Read match score, minute, and commentary |
+| Ctrl+Shift+R | Read entire visible screen |
 | Ctrl+Shift+H | Help — List all shortcuts |
 | Escape | Stop speech |
 | Arrow Keys | Navigate (uses FM26's built-in nav) |
@@ -90,12 +111,14 @@ See [BUILDING.md](BUILDING.md) for complete build instructions.
 
 ```
 psychic-chainsaw/
+├── install.bat                 # One-click installer (double-click to run)
+├── install.ps1                 # PowerShell installer script
 ├── src/TouchlineMod/           # C# BepInEx plugin (the actual mod)
 │   ├── Plugin.cs               # BepInEx entry point
 │   ├── Core/                   # Speech output, text cleaning, manager
 │   ├── Navigation/             # Focus tracking, accessible elements
 │   ├── UI/                     # UI scanning, text extraction
-│   ├── Patches/                # Harmony patches for FM26 events
+│   ├── Patches/                # Harmony patches for FM26 events & match day
 │   └── Config/                 # BepInEx configuration
 ├── prototype/                  # Original Python proof-of-concept
 │   ├── core/                   # Python TTS & input handling
@@ -128,7 +151,12 @@ This approach leverages the game's existing keyboard navigation rather than impl
 - [x] Table header and row reading
 - [x] UI deep scanner for debugging
 - [x] Configurable via BepInEx config
-- [ ] Match day live commentary narration
+- [x] One-click installer (install.bat)
+- [x] Match day live commentary narration
+- [x] Full screen reading (Ctrl+Shift+R)
+- [x] Dynamic content detection (popups, dialogs, notifications)
+- [x] List position tracking ("X of Y")
+- [x] Parent context in announcements (screen/panel names)
 - [ ] Tactics screen enhanced navigation
 - [ ] Transfer market accessibility
 - [ ] Audio cues for key events
@@ -157,6 +185,6 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Version**: 0.2.0  
+**Version**: 0.3.0  
 **Status**: BepInEx plugin — ready for testing with FM26  
 **Last Updated**: February 2026

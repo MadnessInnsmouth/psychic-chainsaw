@@ -41,6 +41,7 @@ namespace TouchlineMod
 
                 _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
                 _harmony.PatchAll();
+                Patches.MatchPatches.ApplyMatchPatches(_harmony);
                 Log.LogInfo("Harmony patches applied");
 
                 Log.LogInfo("Touchline loaded successfully");
@@ -63,6 +64,6 @@ namespace TouchlineMod
     {
         public const string PLUGIN_GUID = "com.touchline.fm26accessibility";
         public const string PLUGIN_NAME = "Touchline";
-        public const string PLUGIN_VERSION = "0.2.0";
+        public const string PLUGIN_VERSION = "0.3.0";
     }
 }

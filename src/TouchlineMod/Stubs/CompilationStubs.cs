@@ -171,6 +171,7 @@ namespace UnityEngine
         public int childCount { get; set; }
         public Transform GetChild(int index) => null;
         public Transform Find(string name) => null;
+        public int GetSiblingIndex() => 0;
         public IEnumerator<Transform> GetEnumerator()
         {
             yield break;

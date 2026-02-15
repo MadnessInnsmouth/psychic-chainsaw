@@ -6,7 +6,7 @@
     <RootNamespace>TouchlineMod</RootNamespace>
     <Product>Touchline - FM26 Accessibility Mod</Product>
     <Description>BepInEx plugin providing screen reader accessibility for Football Manager 2026</Description>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
