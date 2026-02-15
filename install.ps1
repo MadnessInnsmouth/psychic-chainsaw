@@ -21,6 +21,38 @@ $ProgressPreference = "SilentlyContinue"  # Speed up Invoke-WebRequest
 # --- Script Configuration ---
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# --- Logging Configuration ---
+$LogFile = Join-Path $ScriptDir "touchline-installer.log"
+
+# Clear previous log file if it exists
+if (Test-Path $LogFile) {
+    Remove-Item $LogFile -Force -ErrorAction SilentlyContinue
+}
+
+# Initialize log file with timestamp and system info
+$logHeader = @"
+============================================================
+Touchline Installer Log
+============================================================
+Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+PowerShell Version: $($PSVersionTable.PSVersion)
+OS: $([System.Environment]::OSVersion.VersionString)
+User: $env:USERNAME
+Computer: $env:COMPUTERNAME
+Script Directory: $ScriptDir
+============================================================
+
+"@
+
+Add-Content -Path $LogFile -Value $logHeader -ErrorAction SilentlyContinue
+
+function Write-Log {
+    param([string]$Message, [string]$Level = "INFO")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
+}
+
 # --- Note: Manual extraction required ---
 # If you downloaded a Touchline-FM26-Installer.zip file, please extract it manually
 # before running this installer. The installer expects files to be already extracted.
@@ -34,10 +66,22 @@ $TouchlineReleasesApi = "https://api.github.com/repos/MadnessInnsmouth/psychic-c
 $TolkRawBase = "https://raw.githubusercontent.com/dkager/tolk/master/libs/x64"
 
 # --- Colours and output ---
-function Write-Step($msg) { Write-Host "`n>> $msg" -ForegroundColor Cyan }
-function Write-Ok($msg)   { Write-Host "   [OK] $msg" -ForegroundColor Green }
-function Write-Warn($msg) { Write-Host "   [!] $msg" -ForegroundColor Yellow }
-function Write-Err($msg)  { Write-Host "   [ERROR] $msg" -ForegroundColor Red }
+function Write-Step($msg) { 
+    Write-Host "`n>> $msg" -ForegroundColor Cyan
+    Write-Log $msg "STEP"
+}
+function Write-Ok($msg) { 
+    Write-Host "   [OK] $msg" -ForegroundColor Green
+    Write-Log $msg "OK"
+}
+function Write-Warn($msg) { 
+    Write-Host "   [!] $msg" -ForegroundColor Yellow
+    Write-Log $msg "WARN"
+}
+function Write-Err($msg) { 
+    Write-Host "   [ERROR] $msg" -ForegroundColor Red
+    Write-Log $msg "ERROR"
+}
 
 # --- DLL Search Functions ---
 # Searches the local file system for required DLL files
@@ -129,6 +173,9 @@ Write-Host "  Touchline - FM26 Accessibility Mod Installer" -ForegroundColor Whi
 Write-Host "  Making Football Manager 2026 accessible for everyone" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Log "=== INSTALLATION STARTED ===" "INFO"
+
+try {
 
 # ============================================================
 # Step 1: Find Football Manager 2026
@@ -147,15 +194,22 @@ $steamPaths = @(
     "F:\SteamLibrary\steamapps\common\Football Manager 26"
 )
 
+Write-Log "Searching for FM26 in common locations..." "INFO"
+
 # Also try to read Steam library folders from libraryfolders.vdf
 $steamConfigPath = "$env:ProgramFiles (x86)\Steam\steamapps\libraryfolders.vdf"
 if (Test-Path $steamConfigPath) {
+    Write-Log "Found Steam library config at: $steamConfigPath" "INFO"
     $vdfContent = Get-Content $steamConfigPath -Raw
     $pathMatches = [regex]::Matches($vdfContent, '"path"\s+"([^"]+)"')
+    Write-Log "Found $($pathMatches.Count) Steam library paths in config" "INFO"
     foreach ($match in $pathMatches) {
         $libPath = $match.Groups[1].Value -replace '\\\\', '\'
         $steamPaths += "$libPath\steamapps\common\Football Manager 26"
+        Write-Log "  Added Steam library path: $libPath" "INFO"
     }
+} else {
+    Write-Log "Steam library config not found at: $steamConfigPath" "INFO"
 }
 
 # Epic Games common locations
@@ -185,13 +239,16 @@ foreach ($path in $steamPaths) {
 $steamPaths = $expandedPaths
 
 foreach ($path in $steamPaths) {
+    Write-Log "Checking path: $path" "INFO"
     if (Test-Path "$path\Football Manager 26.exe") {
         $FM26Path = $path
+        Write-Log "Found FM26 at: $FM26Path" "INFO"
         break
     }
     # Also check for fm.exe variant
     if (Test-Path "$path\fm.exe") {
         $FM26Path = $path
+        Write-Log "Found FM26 (fm.exe) at: $FM26Path" "INFO"
         break
     }
 }
@@ -199,14 +256,17 @@ foreach ($path in $steamPaths) {
 # If not found, ask the user
 if (-not $FM26Path) {
     Write-Warn "Could not auto-detect Football Manager 2026."
+    Write-Log "FM26 auto-detection failed. Prompting user for path." "WARN"
     Write-Host ""
     Write-Host "   Please enter the full path to your FM26 folder" -ForegroundColor White
     Write-Host '   Example: C:\Program Files (x86)\Steam\steamapps\common\Football Manager 26' -ForegroundColor Gray
     Write-Host ""
     $FM26Path = Read-Host "   FM26 path"
     $FM26Path = $FM26Path.Trim('"').Trim()
+    Write-Log "User provided path: $FM26Path" "INFO"
     if (-not (Test-Path $FM26Path)) {
         Write-Err "Path not found: $FM26Path"
+        Write-Log "User-provided path does not exist: $FM26Path" "ERROR"
         Write-Host "   Please check the path and try again."
         Read-Host "Press Enter to exit"
         exit 1
@@ -215,10 +275,12 @@ if (-not $FM26Path) {
     $testExe = @(Get-ChildItem "$FM26Path\*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Football Manager*" -or $_.Name -like "fm.exe" } | Select-Object -First 1)
     if ($testExe.Count -eq 0) {
         Write-Err "No Football Manager executable found in: $FM26Path"
+        Write-Log "No FM executable found at user-provided path: $FM26Path" "ERROR"
         Write-Host "   Please check the path and try again."
         Read-Host "Press Enter to exit"
         exit 1
     }
+    Write-Log "Verified FM26 executable at user-provided path" "INFO"
 }
 
 Write-Ok "Found FM26 at: $FM26Path"
@@ -233,7 +295,9 @@ $bepInExDoorStop = Join-Path $FM26Path "winhttp.dll"
 
 if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
     Write-Ok "BepInEx is already installed"
+    Write-Log "BepInEx already installed at: $bepInExCoreDll" "INFO"
 } else {
+    Write-Log "BepInEx not found. Starting installation..." "INFO"
     $bepInExInstalled = $false
     
     # --- Strategy 1: Search for existing BepInEx installation on the system ---
@@ -271,37 +335,47 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
     # --- Strategy 3: Download from GitHub ---
     if (-not $bepInExInstalled) {
         Write-Host "   Downloading BepInEx 6..." -ForegroundColor White
+        Write-Log "Attempting to download BepInEx from: $BepInExUrl" "INFO"
         $bepZip = Join-Path $env:TEMP "bepinex_fm26.zip"
         try {
             Invoke-WebRequest -Uri $BepInExUrl -OutFile $bepZip -UseBasicParsing
             Write-Ok "Downloaded BepInEx"
+            Write-Log "Successfully downloaded BepInEx to: $bepZip" "INFO"
             Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
+            Write-Log "Successfully extracted BepInEx to: $FM26Path" "INFO"
             Remove-Item $bepZip -ErrorAction SilentlyContinue
             Write-Ok "BepInEx installed"
             $bepInExInstalled = $true
         } catch {
             Write-Warn "Could not download BepInEx from primary URL."
+            Write-Log "Failed to download BepInEx: $($_.Exception.Message)" "ERROR"
             Write-Host "   Trying alternate URL..." -ForegroundColor Gray
             try {
                 # Fallback: query GitHub API for the latest BepInEx 6 pre-release asset
                 Write-Host "   Querying GitHub API for latest BepInEx release..." -ForegroundColor Gray
+                Write-Log "Querying GitHub API for BepInEx releases..." "INFO"
                 $bepReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/BepInEx/BepInEx/releases" -UseBasicParsing -ErrorAction Stop
                 $bepRelease = $bepReleases | Where-Object { $_.tag_name -match "^v6\." } | Select-Object -First 1
                 if (-not $bepRelease) {
                     throw "No BepInEx 6.x release found on GitHub"
                 }
+                Write-Log "Found BepInEx release: $($bepRelease.tag_name)" "INFO"
                 $bepAsset = $bepRelease.assets | Where-Object { $_.name -match "IL2CPP-win-x64" } | Select-Object -First 1
                 if (-not $bepAsset) {
                     throw "No matching BepInEx IL2CPP win-x64 asset found"
                 }
+                Write-Log "Downloading BepInEx asset: $($bepAsset.name)" "INFO"
                 Invoke-WebRequest -Uri $bepAsset.browser_download_url -OutFile $bepZip -UseBasicParsing
                 Write-Ok "Downloaded BepInEx from GitHub API (v$($bepRelease.tag_name))"
+                Write-Log "Successfully downloaded BepInEx from GitHub API" "INFO"
                 Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
+                Write-Log "Successfully extracted BepInEx to: $FM26Path" "INFO"
                 Remove-Item $bepZip -ErrorAction SilentlyContinue
                 Write-Ok "BepInEx installed"
                 $bepInExInstalled = $true
             } catch {
                 Write-Err "Failed to download BepInEx."
+                Write-Log "Failed to download BepInEx from GitHub API: $($_.Exception.Message)" "ERROR"
                 Write-Host "   Please download it manually from:" -ForegroundColor Yellow
                 Write-Host "   https://github.com/BepInEx/BepInEx/releases" -ForegroundColor Yellow
                 Write-Host "   Extract it into: $FM26Path" -ForegroundColor Yellow
@@ -339,22 +413,29 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
 
     $gameExe = Get-ChildItem "$FM26Path\*.exe" | Where-Object { $_.Name -notlike "Unins*" -and $_.Name -notlike "crash*" } | Select-Object -First 1
     if ($gameExe) {
+        Write-Log "Found game executable: $($gameExe.FullName)" "INFO"
         $maxAttempts = 2
         for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             if ($attempt -gt 1) {
                 Write-Host ""
                 Write-Host "   Retrying interop generation (attempt $attempt of $maxAttempts)..." -ForegroundColor Yellow
+                Write-Log "Retrying interop generation (attempt $attempt of $maxAttempts)" "INFO"
             }
 
             Write-Host "   Press Enter to launch FM26..." -ForegroundColor Yellow
             Read-Host
 
             try {
+                Write-Log "Launching game: $($gameExe.FullName)" "INFO"
                 $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru -ErrorAction Stop
                 Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
+                Write-Log "Game process started with PID: $($gameProcess.Id)" "INFO"
             } catch {
                 Write-Err "Failed to start game: $($_.Exception.Message)"
+                Write-Log "Failed to start game: $($_.Exception.Message)" "ERROR"
                 Write-Host "   Error details: $($_.CategoryInfo.Category) - $($_.FullyQualifiedErrorId)" -ForegroundColor Gray
+                Write-Log "Error category: $($_.CategoryInfo.Category)" "ERROR"
+                Write-Log "Error ID: $($_.FullyQualifiedErrorId)" "ERROR"
                 Write-Host "   This can happen if the game requires administrator privileges or if antivirus is blocking it." -ForegroundColor Yellow
                 if ($attempt -lt $maxAttempts) {
                     Write-Host "   Will retry..." -ForegroundColor Yellow
@@ -367,9 +448,11 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
             $exited = $gameProcess.WaitForExit(120000)
             if (-not $exited) {
                 Write-Host "   Game is still running. Please close it when ready." -ForegroundColor Yellow
+                Write-Log "Game process still running after 2 minutes" "INFO"
                 Read-Host "   Press Enter after you've closed the game"
             } else {
                 Write-Host "   Game process has exited." -ForegroundColor Gray
+                Write-Log "Game process exited with code: $($gameProcess.ExitCode)" "INFO"
                 # BepInEx writes interop assemblies asynchronously after the game
                 # process exits; allow enough time for disk I/O to complete.
                 Start-Sleep -Seconds 5
@@ -379,19 +462,26 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
             $bepLogFile = Join-Path $FM26Path "BepInEx\LogOutput.log"
             if (-not (Test-Path $bepLogFile)) {
                 Write-Warn "BepInEx log file not found — BepInEx may not have loaded."
+                Write-Log "BepInEx log file not found at: $bepLogFile" "WARN"
                 Write-Host "   Ensure winhttp.dll is in the game folder alongside the game .exe." -ForegroundColor Yellow
+            } else {
+                Write-Log "BepInEx log file found at: $bepLogFile" "INFO"
             }
 
             # Verify interop assemblies were generated
             if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue)).Count -gt 0) {
+                $interopCount = @(Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count
                 Write-Ok "Interop assemblies generated successfully"
+                Write-Log "Generated $interopCount interop assemblies in: $interopDir" "INFO"
                 break
             } else {
                 if ($attempt -lt $maxAttempts) {
                     Write-Warn "Interop assemblies not found after game run."
+                    Write-Log "Interop assemblies not found in: $interopDir" "WARN"
                     Write-Host "   BepInEx may need one more launch to finish generating them." -ForegroundColor Yellow
                 } else {
                     Write-Warn "Interop assemblies not found after $maxAttempts attempts."
+                    Write-Log "Interop assemblies not found after $maxAttempts attempts" "WARN"
                     Write-Host "   This can happen if BepInEx didn't fully initialise." -ForegroundColor Yellow
                     Write-Host "   Try launching FM26 once more from Steam, let it close, then re-run this installer." -ForegroundColor Yellow
                     if (Test-Path $bepLogFile) {
@@ -402,6 +492,7 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
         }
     } else {
         Write-Warn "Could not find game executable. Please run FM26 once manually, then re-run this installer."
+        Write-Log "No game executable found in: $FM26Path" "WARN"
     }
 }
 
@@ -626,6 +717,26 @@ if (Test-Path $modDll) {
 # ============================================================
 # Done!
 # ============================================================
+Write-Log "=== INSTALLATION COMPLETED ===" "INFO"
+
+} catch {
+    Write-Err "An unexpected error occurred during installation:"
+    Write-Err $_.Exception.Message
+    Write-Log "FATAL ERROR: $($_.Exception.Message)" "ERROR"
+    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
+    Write-Host ""
+    Write-Host "   Full error details have been logged to:" -ForegroundColor Yellow
+    Write-Host "   $LogFile" -ForegroundColor White
+    Write-Host ""
+    Write-Host "   Next steps:" -ForegroundColor Cyan
+    Write-Host "   1. Check the log file for detailed error information" -ForegroundColor Gray
+    Write-Host "   2. See INSTALL.md for troubleshooting guidance" -ForegroundColor Gray
+    Write-Host "   3. Report issues at: https://github.com/MadnessInnsmouth/psychic-chainsaw/issues" -ForegroundColor Gray
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
 
@@ -648,6 +759,12 @@ if ($allGood) {
 } else {
     Write-Host "  Installation incomplete - see errors above." -ForegroundColor Yellow
     Write-Host "  Fix the issues and run this installer again." -ForegroundColor Yellow
+    Write-Log "Installation completed with errors" "WARN"
+    Write-Host ""
+    Write-Host "  Troubleshooting:" -ForegroundColor Cyan
+    Write-Host "  - Installation log saved to: $LogFile" -ForegroundColor White
+    Write-Host "  - Share the log file contents when reporting issues" -ForegroundColor Gray
+    Write-Host "  - See INSTALL.md for common solutions" -ForegroundColor Gray
 }
 
 Write-Host "============================================================" -ForegroundColor Cyan
