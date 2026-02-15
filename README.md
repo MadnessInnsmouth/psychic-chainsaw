@@ -23,7 +23,7 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 
 ## Requirements
 
-- Football Manager 26 (Unity IL2CPP)
+- Football Manager 26 (Unity IL2CPP) — **Steam, Epic Games, or Xbox Game Pass** editions are all supported
 - [BepInEx 6.x for Unity IL2CPP](https://github.com/BepInEx/BepInEx)
 - [NVDA](https://www.nvaccess.org/) or JAWS screen reader
 - [Tolk](https://github.com/dkager/tolk/releases) screen reader library
@@ -32,14 +32,15 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 
 ### One-Click Install (Recommended)
 
-1. Download the latest release from [Releases](../../releases)
-2. Double-click **`install.bat`** — it does everything automatically:
-   - Finds your FM26 installation
+1. Download **Touchline-FM26-Installer.zip** from the [Releases page](../../releases/latest)
+2. Extract the ZIP anywhere on your computer
+3. Double-click **`install.bat`** — it does everything automatically:
+   - Finds your FM26 installation (Steam, Epic, or Xbox Game Pass)
    - Downloads and installs BepInEx (mod framework)
    - Downloads and installs Tolk (screen reader bridge)
    - Installs the Touchline accessibility mod
-3. Start **NVDA** (or JAWS), then launch FM26
-4. You should hear "Touchline accessibility mod loaded"
+4. Start **NVDA** (or JAWS), then launch FM26
+5. You should hear "Touchline accessibility mod loaded"
 
 ### Manual Install
 
@@ -186,5 +187,6 @@ MIT License — See [LICENSE](LICENSE) for details.
 ---
 
 **Version**: 0.3.0  
-**Status**: BepInEx plugin — ready for testing with FM26  
+**Status**: Functional BepInEx plugin — download from the [Releases page](../../releases/latest), run `install.bat`, and play  
+**Supported Stores**: Steam, Epic Games, Xbox Game Pass  
 **Last Updated**: February 2026

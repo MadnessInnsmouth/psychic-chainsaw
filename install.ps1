@@ -12,7 +12,7 @@
 # Usage: Right-click install.ps1 -> "Run with PowerShell"
 #   Or:  Double-click install.bat (which calls this script)
 #
-# Requirements: Windows 10/11, Football Manager 2026 (Steam or Epic)
+# Requirements: Windows 10/11, Football Manager 2026 (Steam, Epic, or Xbox Game Pass)
 # ============================================================
 
 $ErrorActionPreference = "Stop"
@@ -70,6 +70,26 @@ $steamPaths += @(
     "$env:ProgramFiles\Epic Games\FootballManager26",
     "$env:ProgramFiles (x86)\Epic Games\FootballManager26"
 )
+
+# Xbox Game Pass / Microsoft Store locations
+$steamPaths += @(
+    "$env:ProgramFiles\WindowsApps\SEGAEuropeLtd.FootballManager26*",
+    "$env:LOCALAPPDATA\Packages\SEGAEuropeLtd.FootballManager26*\LocalCache\Local"
+)
+
+# Expand wildcards for Xbox Game Pass paths (folder names include version IDs)
+$expandedPaths = @()
+foreach ($path in $steamPaths) {
+    if ($path -match '\*') {
+        $resolved = Resolve-Path $path -ErrorAction SilentlyContinue
+        if ($resolved) {
+            $expandedPaths += $resolved.Path
+        }
+    } else {
+        $expandedPaths += $path
+    }
+}
+$steamPaths = $expandedPaths
 
 foreach ($path in $steamPaths) {
     if (Test-Path "$path\Football Manager 26.exe") {

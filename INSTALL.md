@@ -8,7 +8,7 @@ The easiest way to install Touchline is the one-click installer:
 2. **Double-click `install.bat`** — that's it!
 
 The installer automatically:
-- Finds your Football Manager 2026 installation (Steam or Epic Games)
+- Finds your Football Manager 2026 installation (Steam, Epic Games, or Xbox Game Pass)
 - Downloads and installs BepInEx 6 (the mod framework)
 - Downloads and installs Tolk (screen reader bridge for NVDA/JAWS)
 - Installs the Touchline accessibility mod
@@ -28,7 +28,7 @@ If you prefer to install manually, follow these steps:
 
 ## Prerequisites
 
-- **Football Manager 26** (Steam or Epic Games)
+- **Football Manager 26** (Steam, Epic Games, or Xbox Game Pass)
 - **BepInEx 6.x** for Unity IL2CPP
 - **NVDA screen reader** (recommended) or **JAWS**
 - **Tolk.dll** (for screen reader integration)
@@ -134,6 +134,10 @@ You can edit this file to customize:
 - FM26's keyboard navigation must be active (use Tab/arrows to navigate).
 - Try pressing Ctrl+Shift+W to check if the mod detects the current focus.
 - Run Ctrl+Shift+S to deep-scan the UI and check `TouchlineUIScan.txt`.
+
+### Xbox Game Pass / Microsoft Store
+- The installer auto-detects Game Pass installations. If it can't find FM26, enter the path manually when prompted.
+- Xbox Game Pass installs may use a `WindowsApps` folder with restricted permissions. If you get an access error, try running `install.bat` as administrator (right-click → "Run as administrator").
 
 ## Uninstalling
 

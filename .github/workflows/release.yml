@@ -1,0 +1,88 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore TouchlineMod.sln
+
+      - name: Build
+        run: dotnet build TouchlineMod.sln -c Release --no-restore
+
+      - name: Read version from project
+        id: version
+        run: |
+          VERSION=$(grep '<Version>' src/TouchlineMod/TouchlineMod.csproj | sed 's/.*<Version>\(.*\)<\/Version>.*/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+          SHORT_SHA=${GITHUB_SHA::7}
+          TAG="v${VERSION}+${TIMESTAMP}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "display_version=$VERSION (build $SHORT_SHA)" >> "$GITHUB_OUTPUT"
+
+      - name: Package release
+        run: |
+          mkdir -p release-package
+          cp src/TouchlineMod/bin/Release/net6.0/TouchlineMod.dll release-package/
+          cp install.bat release-package/
+          cp install.ps1 release-package/
+          cp README.md release-package/
+          cp INSTALL.md release-package/
+          cp LICENSE release-package/
+          cd release-package
+          zip -r ../Touchline-FM26-Installer.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Touchline v${{ steps.version.outputs.version }}"
+          body: |
+            ## Touchline - FM26 Accessibility Mod
+
+            **Version**: ${{ steps.tag.outputs.display_version }}
+
+            ### How to Install
+
+            1. Download **Touchline-FM26-Installer.zip** below
+            2. Extract the ZIP anywhere on your computer
+            3. Double-click **install.bat**
+            4. The installer will automatically find your FM26 game (Steam, Epic, or Xbox Game Pass) and set everything up
+
+            That's it! Start your screen reader (NVDA or JAWS), then launch Football Manager 2026.
+
+            ### What's Included
+
+            - `install.bat` — Double-click this to install everything
+            - `install.ps1` — PowerShell installer (called by install.bat)
+            - `TouchlineMod.dll` — The accessibility mod
+            - `README.md` — Full documentation
+            - `INSTALL.md` — Detailed installation guide
+            - `LICENSE` — MIT License
+          files: Touchline-FM26-Installer.zip
+          generate_release_notes: true
