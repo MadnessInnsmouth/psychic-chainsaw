@@ -4,9 +4,9 @@
 #
 # This script automatically:
 #   1. Finds your Football Manager 2026 installation
-#   2. Downloads and installs BepInEx 6 (mod framework)
-#   3. Downloads and installs Tolk (screen reader bridge)
-#   4. Downloads and installs Touchline (the accessibility mod)
+#   2. Installs BepInEx 6 (mod framework)
+#   3. Installs Tolk (screen reader bridge)
+#   4. Installs Touchline (the accessibility mod)
 #   5. Launches FM26 once to generate required files
 #
 # Usage: Right-click install.ps1 -> "Run with PowerShell"
@@ -24,7 +24,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # --- Logging Configuration ---
 $LogFile = Join-Path $ScriptDir "touchline-installer.log"
 
-# Clear previous log file if it exists
+# Clear previous log file and start fresh
 if (Test-Path $LogFile) {
     Remove-Item $LogFile -Force -ErrorAction SilentlyContinue
 }
@@ -53,16 +53,10 @@ function Write-Log {
     Add-Content -Path $LogFile -Value $logMessage -ErrorAction SilentlyContinue
 }
 
-# --- Note: Manual extraction required ---
-# If you downloaded a Touchline-FM26-Installer.zip file, please extract it manually
-# before running this installer. The installer expects files to be already extracted.
-
 # --- Version Configuration ---
 $BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
 $TouchlineReleasesApi = "https://api.github.com/repos/MadnessInnsmouth/psychic-chainsaw/releases/latest"
-# Tolk DLLs should be provided in an extracted tolk-x64 folder alongside the installer.
-# Fallback: download companion DLLs individually from the dkager/tolk repository.
 $TolkRawBase = "https://raw.githubusercontent.com/dkager/tolk/master/libs/x64"
 
 # --- Colours and output ---
@@ -81,90 +75,6 @@ function Write-Warn($msg) {
 function Write-Err($msg) { 
     Write-Host "   [ERROR] $msg" -ForegroundColor Red
     Write-Log $msg "ERROR"
-}
-
-# --- DLL Search Functions ---
-# Searches the local file system for required DLL files
-# This allows the installer to work offline if DLLs are already present
-function Find-DllOnSystem {
-    param(
-        [string]$DllName,
-        [string[]]$AdditionalSearchPaths = @()
-    )
-    
-    Write-Host "   Searching for $DllName in installer directory..." -ForegroundColor Gray
-    
-    # Only search within the installer's own directory and its subdirectories.
-    # The distribution zip includes a subfolder (e.g. tolk-x64) with the required DLLs,
-    # so a recursive search of the script directory is sufficient.
-    if ($ScriptDir -and (Test-Path $ScriptDir)) {
-        $found = Get-ChildItem -Path $ScriptDir -Filter $DllName -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) {
-            Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
-            return $found.FullName
-        }
-    }
-    
-    # Also check any additional paths explicitly provided by the caller
-    foreach ($path in $AdditionalSearchPaths) {
-        if ($path -and (Test-Path $path)) {
-            $found = Get-ChildItem -Path $path -Filter $DllName -Recurse -Depth 2 -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($found) {
-                Write-Host "   Found $DllName at: $($found.FullName)" -ForegroundColor Gray
-                return $found.FullName
-            }
-        }
-    }
-    
-    return $null
-}
-
-function Find-BepInExInstallation {
-    Write-Host "   Searching for existing BepInEx installation..." -ForegroundColor Gray
-    
-    # Search for BepInEx.Core.dll which is the main indicator
-    $bepInExDll = Find-DllOnSystem -DllName "BepInEx.Core.dll"
-    if ($bepInExDll) {
-        $bepInExDir = Split-Path -Parent $bepInExDll
-        # Go up to the BepInEx root (core folder is inside BepInEx)
-        if ($bepInExDir -match "\\core$") {
-            $bepInExRoot = Split-Path -Parent $bepInExDir
-            Write-Host "   Found BepInEx installation at: $bepInExRoot" -ForegroundColor Gray
-            return $bepInExRoot
-        }
-    }
-    
-    return $null
-}
-
-function Copy-BepInExFromLocal {
-    param(
-        [string]$SourcePath,
-        [string]$DestinationPath
-    )
-    
-    Write-Host "   Copying BepInEx from local installation..." -ForegroundColor White
-    
-    if (-not (Test-Path $SourcePath)) {
-        return $false
-    }
-    
-    try {
-        # Copy BepInEx folder structure
-        Copy-Item -Path $SourcePath -Destination $DestinationPath -Recurse -Force -ErrorAction Stop
-        
-        # Also copy winhttp.dll (doorstop) if present
-        $sourceRoot = Split-Path -Parent $SourcePath
-        $winhttpSource = Join-Path $sourceRoot "winhttp.dll"
-        if (Test-Path $winhttpSource) {
-            Copy-Item -Path $winhttpSource -Destination (Join-Path (Split-Path -Parent $DestinationPath) "winhttp.dll") -Force
-        }
-        
-        return $true
-    } catch {
-        Write-Warn "Failed to copy BepInEx: $_"
-        return $false
-    }
 }
 
 Write-Host ""
@@ -299,89 +209,39 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
 } else {
     Write-Log "BepInEx not found. Starting installation..." "INFO"
     $bepInExInstalled = $false
-    
-    # --- Strategy 1: Search for existing BepInEx installation on the system ---
-    $existingBepInEx = Find-BepInExInstallation
-    if ($existingBepInEx -and (Test-Path "$existingBepInEx\core\BepInEx.Core.dll")) {
-        Write-Host "   Found existing BepInEx installation, copying to FM26..." -ForegroundColor White
-        $targetBepInEx = Join-Path $FM26Path "BepInEx"
-        if (Copy-BepInExFromLocal -SourcePath $existingBepInEx -DestinationPath $targetBepInEx) {
-            Write-Ok "BepInEx installed from local copy"
-            $bepInExInstalled = $true
-        }
+
+    # Check for a bundled BepInEx zip in the installer directory
+    $localBepZips = @(Get-ChildItem -Path (Join-Path $ScriptDir "BepInEx-Unity.IL2CPP-win-x64*.zip") -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+    if ($localBepZips.Count -gt 0) {
+        $bepZip = $localBepZips[0].FullName
+        Write-Host "   Found bundled BepInEx archive: $bepZip" -ForegroundColor White
+        Write-Log "Found local BepInEx archive: $bepZip" "INFO"
+        Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
+        Write-Ok "BepInEx installed from bundled archive"
+        Write-Log "Extracted BepInEx to: $FM26Path" "INFO"
+        $bepInExInstalled = $true
     }
-    
-    # --- Strategy 2: Look for BepInEx zip file locally ---
+
+    # Download from GitHub if no local archive was found
     if (-not $bepInExInstalled) {
-        $localZips = @(
-            (Join-Path $ScriptDir "BepInEx-Unity.IL2CPP-win-x64*.zip"),
-            "$env:USERPROFILE\Downloads\BepInEx-Unity.IL2CPP-win-x64*.zip"
-        )
-        
-        foreach ($zipPattern in $localZips) {
-            $foundZips = @(Get-ChildItem -Path $zipPattern -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
-            if ($foundZips.Count -gt 0) {
-                $bepZip = $foundZips[0].FullName
-                Write-Host "   Found local BepInEx archive: $bepZip" -ForegroundColor White
-                Write-Host "   Installing BepInEx..." -ForegroundColor White
-                Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
-                Write-Ok "BepInEx installed from local archive"
-                $bepInExInstalled = $true
-                break
-            }
-        }
-    }
-    
-    # --- Strategy 3: Download from GitHub ---
-    if (-not $bepInExInstalled) {
-        Write-Host "   Downloading BepInEx 6..." -ForegroundColor White
-        Write-Log "Attempting to download BepInEx from: $BepInExUrl" "INFO"
+        Write-Host "   Downloading BepInEx $BepInExVersion..." -ForegroundColor White
+        Write-Log "Downloading BepInEx from: $BepInExUrl" "INFO"
         $bepZip = Join-Path $env:TEMP "bepinex_fm26.zip"
         try {
             Invoke-WebRequest -Uri $BepInExUrl -OutFile $bepZip -UseBasicParsing
-            Write-Ok "Downloaded BepInEx"
-            Write-Log "Successfully downloaded BepInEx to: $bepZip" "INFO"
+            Write-Log "Downloaded BepInEx to: $bepZip" "INFO"
             Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
-            Write-Log "Successfully extracted BepInEx to: $FM26Path" "INFO"
+            Write-Log "Extracted BepInEx to: $FM26Path" "INFO"
             Remove-Item $bepZip -ErrorAction SilentlyContinue
-            Write-Ok "BepInEx installed"
+            Write-Ok "BepInEx $BepInExVersion installed"
             $bepInExInstalled = $true
         } catch {
-            Write-Warn "Could not download BepInEx from primary URL."
+            Write-Err "Failed to download BepInEx: $($_.Exception.Message)"
             Write-Log "Failed to download BepInEx: $($_.Exception.Message)" "ERROR"
-            Write-Host "   Trying alternate URL..." -ForegroundColor Gray
-            try {
-                # Fallback: query GitHub API for the latest BepInEx 6 pre-release asset
-                Write-Host "   Querying GitHub API for latest BepInEx release..." -ForegroundColor Gray
-                Write-Log "Querying GitHub API for BepInEx releases..." "INFO"
-                $bepReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/BepInEx/BepInEx/releases" -UseBasicParsing -ErrorAction Stop
-                $bepRelease = $bepReleases | Where-Object { $_.tag_name -match "^v6\." } | Select-Object -First 1
-                if (-not $bepRelease) {
-                    throw "No BepInEx 6.x release found on GitHub"
-                }
-                Write-Log "Found BepInEx release: $($bepRelease.tag_name)" "INFO"
-                $bepAsset = $bepRelease.assets | Where-Object { $_.name -match "IL2CPP-win-x64" } | Select-Object -First 1
-                if (-not $bepAsset) {
-                    throw "No matching BepInEx IL2CPP win-x64 asset found"
-                }
-                Write-Log "Downloading BepInEx asset: $($bepAsset.name)" "INFO"
-                Invoke-WebRequest -Uri $bepAsset.browser_download_url -OutFile $bepZip -UseBasicParsing
-                Write-Ok "Downloaded BepInEx from GitHub API (v$($bepRelease.tag_name))"
-                Write-Log "Successfully downloaded BepInEx from GitHub API" "INFO"
-                Expand-Archive -Path $bepZip -DestinationPath $FM26Path -Force
-                Write-Log "Successfully extracted BepInEx to: $FM26Path" "INFO"
-                Remove-Item $bepZip -ErrorAction SilentlyContinue
-                Write-Ok "BepInEx installed"
-                $bepInExInstalled = $true
-            } catch {
-                Write-Err "Failed to download BepInEx."
-                Write-Log "Failed to download BepInEx from GitHub API: $($_.Exception.Message)" "ERROR"
-                Write-Host "   Please download it manually from:" -ForegroundColor Yellow
-                Write-Host "   https://github.com/BepInEx/BepInEx/releases" -ForegroundColor Yellow
-                Write-Host "   Extract it into: $FM26Path" -ForegroundColor Yellow
-                Write-Host "   Or place the BepInEx zip in: $ScriptDir" -ForegroundColor Yellow
-                Write-Host "   Then re-run this installer." -ForegroundColor Yellow
-            }
+            Write-Host "   Please download BepInEx manually from:" -ForegroundColor Yellow
+            Write-Host "   https://github.com/BepInEx/BepInEx/releases" -ForegroundColor Yellow
+            Write-Host "   Extract it into: $FM26Path" -ForegroundColor Yellow
+            Write-Host "   Then re-run this installer." -ForegroundColor Yellow
         }
     }
 }
@@ -506,102 +366,59 @@ if (-not (Test-Path $pluginDir)) {
     New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
 }
 
+# Auto-extract tolk-x64.zip if present but not yet extracted
+$tolkZip = Join-Path $ScriptDir "tolk-x64.zip"
+$tolkDir = Join-Path $ScriptDir "tolk-x64"
+if ((Test-Path $tolkZip) -and -not (Test-Path $tolkDir)) {
+    Write-Host "   Extracting bundled tolk-x64.zip..." -ForegroundColor White
+    Write-Log "Extracting tolk-x64.zip to: $tolkDir" "INFO"
+    try {
+        Expand-Archive -Path $tolkZip -DestinationPath $tolkDir -Force
+        Write-Ok "Extracted tolk-x64.zip"
+    } catch {
+        Write-Warn "Failed to extract tolk-x64.zip: $($_.Exception.Message)"
+        Write-Log "Failed to extract tolk-x64.zip: $($_.Exception.Message)" "ERROR"
+    }
+}
+
 $tolkDll = Join-Path $pluginDir "Tolk.dll"
 if (Test-Path $tolkDll) {
     Write-Ok "Tolk.dll is already installed"
 } else {
     $tolkInstalled = $false
 
-    # --- Strategy 1: Search for Tolk DLLs bundled with the installer ---
-    Write-Host "   Searching for Tolk DLLs in installer directory..." -ForegroundColor White
-    $localTolkDll = Find-DllOnSystem -DllName "Tolk.dll"
-    if ($localTolkDll) {
-        $localTolkDir = Split-Path -Parent $localTolkDll
-        Write-Host "   Found Tolk at: $localTolkDir" -ForegroundColor Gray
-        
-        # Copy all DLLs from the same directory (Tolk + companions)
-        $tolkDlls = Get-ChildItem "$localTolkDir\*.dll" -ErrorAction SilentlyContinue
-        $copiedCount = 0
+    # Check for extracted tolk-x64 directory in the installer folder
+    $localTolkDll = Join-Path $tolkDir "Tolk.dll"
+    if (Test-Path $localTolkDll) {
+        Write-Host "   Installing Tolk from bundled files..." -ForegroundColor White
+        $tolkDlls = Get-ChildItem "$tolkDir\*.dll" -ErrorAction SilentlyContinue
         foreach ($dll in $tolkDlls) {
-            try {
-                Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force -ErrorAction Stop
-                $copiedCount++
-            } catch {
-                Write-Host "   Warning: Failed to copy $($dll.Name): $_" -ForegroundColor Yellow
-            }
+            Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force
+            Write-Log "Copied $($dll.Name) to plugin folder" "INFO"
         }
-        
-        if ($copiedCount -gt 0) {
-            Write-Ok "Tolk installed from installer directory ($copiedCount DLL(s) copied)"
-            $tolkInstalled = $true
-        }
+        Write-Ok "Tolk installed from bundled files ($($tolkDlls.Count) DLL(s) copied)"
+        $tolkInstalled = $true
     }
 
-    # --- Strategy 2: Check for local Tolk DLLs bundled with the installer ---
-    # Users should manually extract tolk-x64 folder if they have the zip file
+    # Download companion DLLs from GitHub as a fallback
     if (-not $tolkInstalled) {
-        # Check for extracted tolk-x64 directory (must be manually extracted by user)
-        $localTolkDir = Join-Path $ScriptDir "tolk-x64"
-        $localTolkDll = Join-Path $localTolkDir "Tolk.dll"
-
-        if (Test-Path $localTolkDll) {
-            Write-Host "   Installing Tolk from local bundle..." -ForegroundColor White
-            $companionDlls = Get-ChildItem "$localTolkDir\*.dll" -ErrorAction SilentlyContinue
-            foreach ($dll in $companionDlls) {
-                Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force
-            }
-            Write-Ok "Tolk installed from local bundle (with screen reader libraries)"
-            $tolkInstalled = $true
-        }
-    }
-
-    # --- Strategy 3: Download individual companion DLLs from dkager/tolk repo ---
-    if (-not $tolkInstalled) {
-        Write-Host "   Downloading Tolk companion DLLs from GitHub..." -ForegroundColor White
+        Write-Host "   Tolk not found in installer directory. Downloading companion DLLs..." -ForegroundColor White
+        Write-Log "Tolk not found locally. Attempting download..." "INFO"
         $companionFiles = @("nvdaControllerClient64.dll", "SAAPI64.dll")
-        $downloadedAny = $false
         foreach ($fileName in $companionFiles) {
             try {
                 $destPath = Join-Path $pluginDir $fileName
                 Invoke-WebRequest -Uri "$TolkRawBase/$fileName" -OutFile $destPath -UseBasicParsing
-                $downloadedAny = $true
+                Write-Ok "Downloaded $fileName"
             } catch {
                 Write-Warn "Could not download $fileName"
+                Write-Log "Failed to download $fileName : $($_.Exception.Message)" "ERROR"
             }
         }
-        if ($downloadedAny) {
-            Write-Ok "Downloaded screen reader companion DLLs"
-        }
-        Write-Warn "Tolk.dll could not be downloaded automatically."
-        Write-Host "   The Tolk project (github.com/dkager/tolk) does not publish pre-built releases." -ForegroundColor Yellow
-        Write-Host "   Please obtain Tolk.dll (x64) by building from source or from the Touchline release:" -ForegroundColor Yellow
+        Write-Warn "Tolk.dll itself cannot be downloaded automatically (no pre-built release available)."
+        Write-Host "   Please download the complete installer from:" -ForegroundColor Yellow
         Write-Host "   https://github.com/MadnessInnsmouth/psychic-chainsaw/releases" -ForegroundColor Yellow
-        Write-Host "   Place it in: $pluginDir" -ForegroundColor Yellow
-    }
-}
-
-# Ensure NVDA/JAWS companion DLLs are present alongside Tolk.dll.
-# These can be missed if Tolk was installed from a source that only contained Tolk.dll.
-if (Test-Path $tolkDll) {
-    $requiredCompanions = @("nvdaControllerClient64.dll", "SAAPI64.dll")
-    foreach ($companion in $requiredCompanions) {
-        $companionPath = Join-Path $pluginDir $companion
-        if (-not (Test-Path $companionPath)) {
-            # Try to find it in the installer directory
-            $found = Find-DllOnSystem -DllName $companion
-            if ($found) {
-                Copy-Item $found -Destination $companionPath -Force
-                Write-Ok "Copied missing $companion to plugin folder"
-            } else {
-                # Try downloading from dkager/tolk repository
-                try {
-                    Invoke-WebRequest -Uri "$TolkRawBase/$companion" -OutFile $companionPath -UseBasicParsing
-                    Write-Ok "Downloaded missing $companion"
-                } catch {
-                    Write-Warn "$companion not found — screen reader support for this backend may not work."
-                }
-            }
-        }
+        Write-Host "   Or place Tolk.dll in: $pluginDir" -ForegroundColor Yellow
     }
 }
 
@@ -611,56 +428,47 @@ if (Test-Path $tolkDll) {
 Write-Step "Installing Touchline accessibility mod..."
 
 $modDll = Join-Path $pluginDir "TouchlineMod.dll"
-$downloadedMod = $false
 
-# --- Strategy 1: Search for TouchlineMod.dll in installer directory ---
-if (-not (Test-Path $modDll)) {
-    $localModDll = Find-DllOnSystem -DllName "TouchlineMod.dll"
-    if ($localModDll) {
-        Write-Host "   Found TouchlineMod.dll at: $localModDll" -ForegroundColor Gray
+if (Test-Path $modDll) {
+    Write-Ok "TouchlineMod.dll is already installed"
+} else {
+    $modInstalled = $false
+
+    # Check for TouchlineMod.dll bundled in the installer directory
+    $localModDll = Join-Path $ScriptDir "TouchlineMod.dll"
+    if (Test-Path $localModDll) {
         Copy-Item $localModDll -Destination $modDll -Force
         Write-Ok "Installed TouchlineMod.dll from installer directory"
-        $downloadedMod = $true
+        Write-Log "Copied TouchlineMod.dll from: $localModDll" "INFO"
+        $modInstalled = $true
     }
-}
 
-# --- Strategy 2: Try to download latest release from GitHub ---
-if (-not $downloadedMod -and -not (Test-Path $modDll)) {
-    try {
-        Write-Host "   Checking for latest release..." -ForegroundColor White
-        $releaseInfo = Invoke-RestMethod -Uri $TouchlineReleasesApi -UseBasicParsing -ErrorAction Stop
-        $asset = $releaseInfo.assets | Where-Object { $_.name -eq "TouchlineMod.dll" } | Select-Object -First 1
-        if ($asset) {
-            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $modDll -UseBasicParsing
-            Write-Ok "Downloaded TouchlineMod.dll (v$($releaseInfo.tag_name))"
-            $downloadedMod = $true
+    # Try downloading from GitHub releases as a fallback
+    if (-not $modInstalled) {
+        try {
+            Write-Host "   Downloading TouchlineMod.dll from latest release..." -ForegroundColor White
+            Write-Log "Downloading TouchlineMod.dll from: $TouchlineReleasesApi" "INFO"
+            $releaseInfo = Invoke-RestMethod -Uri $TouchlineReleasesApi -UseBasicParsing -ErrorAction Stop
+            $asset = $releaseInfo.assets | Where-Object { $_.name -eq "TouchlineMod.dll" } | Select-Object -First 1
+            if ($asset) {
+                Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $modDll -UseBasicParsing
+                Write-Ok "Downloaded TouchlineMod.dll (v$($releaseInfo.tag_name))"
+                Write-Log "Downloaded TouchlineMod.dll from release $($releaseInfo.tag_name)" "INFO"
+                $modInstalled = $true
+            } else {
+                Write-Log "No TouchlineMod.dll asset found in latest release" "WARN"
+            }
+        } catch {
+            Write-Log "Failed to download from GitHub: $($_.Exception.Message)" "ERROR"
         }
-    } catch {
-        Write-Host "   Release not available, checking local builds..." -ForegroundColor Gray
     }
-}
 
-# --- Strategy 3: Check for locally-built DLL ---
-if (-not $downloadedMod -and -not (Test-Path $modDll)) {
-    $localBuild = Join-Path $ScriptDir "src\TouchlineMod\bin\Release\net6.0\TouchlineMod.dll"
-    $localBuildDebug = Join-Path $ScriptDir "src\TouchlineMod\bin\Debug\net6.0\TouchlineMod.dll"
-
-    if (Test-Path $localBuild) {
-        Copy-Item $localBuild -Destination $modDll -Force
-        Write-Ok "Installed TouchlineMod.dll from local Release build"
-    } elseif (Test-Path $localBuildDebug) {
-        Copy-Item $localBuildDebug -Destination $modDll -Force
-        Write-Ok "Installed TouchlineMod.dll from local Debug build"
-    } else {
+    if (-not $modInstalled) {
         Write-Warn "Could not find TouchlineMod.dll."
-        Write-Host "   Please try one of the following:" -ForegroundColor Yellow
-        Write-Host "   1. Download from: https://github.com/MadnessInnsmouth/psychic-chainsaw/releases" -ForegroundColor Yellow
-        Write-Host "   2. Build from source: dotnet build TouchlineMod.sln -c Release" -ForegroundColor Yellow
-        Write-Host "   3. Place TouchlineMod.dll in: $pluginDir" -ForegroundColor Yellow
+        Write-Host "   Please download from: https://github.com/MadnessInnsmouth/psychic-chainsaw/releases" -ForegroundColor Yellow
+        Write-Host "   Place TouchlineMod.dll in: $pluginDir" -ForegroundColor Yellow
         Write-Host "   Then re-run this installer." -ForegroundColor Yellow
     }
-} elseif (Test-Path $modDll) {
-    Write-Ok "TouchlineMod.dll is installed"
 }
 
 # ============================================================
@@ -697,14 +505,6 @@ if (Test-Path $nvdaDll) {
     Write-Ok "NVDA controller: Installed"
 } else {
     Write-Warn "NVDA controller: NOT FOUND (NVDA support may not work)"
-    Write-Host "   nvdaControllerClient64.dll must be in: $pluginDir" -ForegroundColor Yellow
-    Write-Host "   It should have been installed alongside Tolk.dll." -ForegroundColor Yellow
-    # Attempt to locate and copy the missing DLL as a recovery step
-    $nvdaFound = Find-DllOnSystem -DllName "nvdaControllerClient64.dll"
-    if ($nvdaFound) {
-        Copy-Item $nvdaFound -Destination (Join-Path $pluginDir "nvdaControllerClient64.dll") -Force
-        Write-Ok "NVDA controller: Recovered from $nvdaFound"
-    }
 }
 
 if (Test-Path $modDll) {
@@ -760,12 +560,11 @@ if ($allGood) {
     Write-Host "  Installation incomplete - see errors above." -ForegroundColor Yellow
     Write-Host "  Fix the issues and run this installer again." -ForegroundColor Yellow
     Write-Log "Installation completed with errors" "WARN"
-    Write-Host ""
-    Write-Host "  Troubleshooting:" -ForegroundColor Cyan
-    Write-Host "  - Installation log saved to: $LogFile" -ForegroundColor White
-    Write-Host "  - Share the log file contents when reporting issues" -ForegroundColor Gray
-    Write-Host "  - See INSTALL.md for common solutions" -ForegroundColor Gray
 }
+
+Write-Host ""
+Write-Host "  Log file: $LogFile" -ForegroundColor White
+Write-Host "  Share this file when reporting issues." -ForegroundColor Gray
 
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""

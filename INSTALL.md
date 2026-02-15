@@ -34,11 +34,13 @@ The installer is designed to work **completely offline** if you have the bundled
 ### What's included in the installer ZIP:
 - **install.bat** / **install.ps1** — Installer scripts
 - **TouchlineMod.dll** — The accessibility mod
-- **tolk-x64.zip** — Screen reader library bundle (Tolk.dll + companion DLLs)
+- **tolk-x64/** — Pre-extracted Tolk screen reader library (Tolk.dll + companion DLLs)
+- **tolk-x64.zip** — Tolk archive (backup copy)
+- **touchline-installer.log** — Log file (written during installation for troubleshooting)
 
 ### To install offline:
 1. Extract the installer ZIP to any folder
-2. Ensure the bundled files (TouchlineMod.dll, tolk-x64.zip) are in the same folder as install.bat
+2. Ensure the bundled files (TouchlineMod.dll, tolk-x64/) are in the same folder as install.bat
 3. Run `install.bat` — the installer uses the files from its own folder first
 
 > **Note**: The installer only searches its own folder for DLL files. It does **not** scan your entire system.

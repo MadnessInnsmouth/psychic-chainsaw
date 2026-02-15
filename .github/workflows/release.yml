@@ -89,14 +89,19 @@ jobs:
 
       - name: Package release
         run: |
-          mkdir -p release-package
+          mkdir -p release-package/tolk-x64
           cp src/TouchlineMod/bin/Release/net6.0/TouchlineMod.dll release-package/
           cp install.bat release-package/
           cp install.ps1 release-package/
           cp README.md release-package/
           cp INSTALL.md release-package/
           cp LICENSE release-package/
+          # Extract tolk-x64.zip into the release folder so the installer finds the DLLs directly
+          unzip -o tolk-x64.zip -d release-package/tolk-x64
+          # Also include the zip for users who want it
           cp tolk-x64.zip release-package/
+          # Create an empty log file so users always have it for error reporting
+          touch release-package/touchline-installer.log
           cd release-package
           zip -r ../Touchline-FM26-Installer.zip .
 
@@ -124,7 +129,9 @@ jobs:
             - `install.bat` — Double-click this to install everything
             - `install.ps1` — PowerShell installer (called by install.bat)
             - `TouchlineMod.dll` — The accessibility mod
-            - `tolk-x64.zip` — Tolk screen reader bridge (NVDA/JAWS support)
+            - `tolk-x64/` — Pre-extracted Tolk screen reader bridge (NVDA/JAWS support)
+            - `tolk-x64.zip` — Tolk archive (backup copy)
+            - `touchline-installer.log` — Log file for troubleshooting (written during install)
             - `README.md` — Full documentation
             - `INSTALL.md` — Detailed installation guide
             - `LICENSE` — MIT License

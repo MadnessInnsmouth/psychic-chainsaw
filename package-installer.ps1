@@ -39,14 +39,14 @@ Write-Host ">> Packaging installer files..." -ForegroundColor Cyan
 Write-Host ""
 
 # Copy core installer files
-Write-Host "   [1/5] Copying installer scripts..." -ForegroundColor White
+Write-Host "   [1/6] Copying installer scripts..." -ForegroundColor White
 Copy-Item (Join-Path $scriptDir "install.bat") -Destination $outputDir -Force
 Copy-Item (Join-Path $scriptDir "install.ps1") -Destination $outputDir -Force
 Write-Host "   [OK] Installer scripts copied" -ForegroundColor Green
 
 # Copy TouchlineMod.dll if available
 Write-Host ""
-Write-Host "   [2/5] Looking for TouchlineMod.dll..." -ForegroundColor White
+Write-Host "   [2/6] Looking for TouchlineMod.dll..." -ForegroundColor White
 $modDllPaths = @(
     (Join-Path $scriptDir "src\TouchlineMod\bin\Release\net6.0\TouchlineMod.dll"),
     (Join-Path $scriptDir "src\TouchlineMod\bin\Debug\net6.0\TouchlineMod.dll"),
@@ -69,7 +69,7 @@ if (-not $modDllFound) {
 
 # Copy tolk-x64 directory if available
 Write-Host ""
-Write-Host "   [3/5] Looking for Tolk libraries..." -ForegroundColor White
+Write-Host "   [3/6] Looking for Tolk libraries..." -ForegroundColor White
 $tolkDir = Join-Path $scriptDir "tolk-x64"
 
 $tolkFound = $false
@@ -81,14 +81,27 @@ if (Test-Path $tolkDir) {
     $tolkFound = $true
 }
 
+# Also check for tolk-x64.zip and extract it if the directory wasn't found
+if (-not $tolkFound) {
+    $tolkZip = Join-Path $scriptDir "tolk-x64.zip"
+    if (Test-Path $tolkZip) {
+        $destTolkDir = Join-Path $outputDir "tolk-x64"
+        Expand-Archive -Path $tolkZip -DestinationPath $destTolkDir -Force
+        Write-Host "   [OK] tolk-x64 extracted from zip" -ForegroundColor Green
+        # Also copy the zip itself for backup
+        Copy-Item $tolkZip -Destination $outputDir -Force
+        Write-Host "   [OK] tolk-x64.zip also included" -ForegroundColor Green
+        $tolkFound = $true
+    }
+}
+
 if (-not $tolkFound) {
     Write-Host "   [!] Tolk libraries not found - users will need to download from release" -ForegroundColor Yellow
-    Write-Host "       Note: Users should extract tolk-x64 folder before running installer" -ForegroundColor Gray
 }
 
 # Copy BepInEx zip if available (optional)
 Write-Host ""
-Write-Host "   [4/5] Looking for BepInEx package..." -ForegroundColor White
+Write-Host "   [4/6] Looking for BepInEx package..." -ForegroundColor White
 $bepInExZip = Get-ChildItem "$scriptDir\BepInEx-Unity.IL2CPP-win-x64*.zip" -ErrorAction SilentlyContinue |
                Sort-Object LastWriteTime -Descending |
                Select-Object -First 1
@@ -103,7 +116,7 @@ if ($bepInExZip) {
 
 # Create README for the installer package
 Write-Host ""
-Write-Host "   [5/5] Creating README..." -ForegroundColor White
+Write-Host "   [5/6] Creating README..." -ForegroundColor White
 $readmeContent = @"
 # Touchline - FM26 Accessibility Mod Installer
 
@@ -111,7 +124,6 @@ $readmeContent = @"
 
 1. **IMPORTANT**: Extract this entire ZIP to any location on your computer
    - Make sure to extract ALL files, not just install.bat
-   - If tolk-x64.zip is included, extract it to create a tolk-x64 folder
 2. Double-click **install.bat**
 3. Follow the on-screen instructions
 
@@ -120,8 +132,9 @@ $readmeContent = @"
 This installer package contains:
 - **install.bat** / **install.ps1** - Automated installation scripts
 - **TouchlineMod.dll** - The accessibility mod (if pre-built)
-- **tolk-x64** folder - Screen reader integration library (if bundled)
-  - Must be extracted before running the installer
+- **tolk-x64/** folder - Screen reader integration library (pre-extracted, if bundled)
+- **tolk-x64.zip** - Tolk archive (backup copy, if bundled)
+- **touchline-installer.log** - Log file (written during installation for troubleshooting)
 - **BepInEx package** - Mod framework (if bundled)
 
 ## Installation Process
@@ -132,12 +145,15 @@ The installer will:
 3. Install Tolk (screen reader bridge)
 4. Install Touchline (the accessibility mod)
 
+## Troubleshooting
+
+If the installer fails, check **touchline-installer.log** in this folder.
+Share the log file contents when reporting issues.
+
 ## Offline Installation
 
-This installer can work **completely offline** if all dependencies are bundled and extracted.
-If files are not included in this package, the installer will:
-1. First search your computer for existing installations
-2. Download missing files from the internet if needed
+This installer works **completely offline** if all dependencies are included.
+If files are missing, the installer will attempt to download them from the internet.
 
 ## Requirements
 
@@ -157,6 +173,12 @@ MIT License - See repository for details
 
 Set-Content -Path (Join-Path $outputDir "README.txt") -Value $readmeContent -Force
 Write-Host "   [OK] README.txt created" -ForegroundColor Green
+
+# Create an empty log file for error reporting
+Write-Host ""
+Write-Host "   [6/6] Creating log file..." -ForegroundColor White
+New-Item -ItemType File -Path (Join-Path $outputDir "touchline-installer.log") -Force | Out-Null
+Write-Host "   [OK] touchline-installer.log created (will be populated during installation)" -ForegroundColor Green
 
 # Create the final package
 Write-Host ""
