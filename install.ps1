@@ -21,29 +21,15 @@ $ProgressPreference = "SilentlyContinue"  # Speed up Invoke-WebRequest
 # --- Script Configuration ---
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# --- Auto-extract bundled zip if present ---
-# If the user downloaded the distribution zip but only extracted install.bat/ps1 without
-# extracting the rest, look for the Touchline zip alongside the installer and extract it.
-$touchlineZips = Get-ChildItem -Path $ScriptDir -Filter "Touchline-FM26-Installer*.zip" -ErrorAction SilentlyContinue |
-                 Sort-Object LastWriteTime -Descending
-foreach ($zipFile in $touchlineZips) {
-    # Only extract if the key bundled files are all missing
-    $hasTolkZip = Test-Path (Join-Path $ScriptDir "tolk-x64.zip")
-    $hasTolkDir = Test-Path (Join-Path $ScriptDir "tolk-x64")
-    $hasModDll  = Test-Path (Join-Path $ScriptDir "TouchlineMod.dll")
-    if (-not $hasTolkZip -and -not $hasTolkDir -and -not $hasModDll) {
-        Write-Host "   Extracting bundled files from $($zipFile.Name)..." -ForegroundColor White
-        Expand-Archive -Path $zipFile.FullName -DestinationPath $ScriptDir -Force
-        Write-Host "   [OK] Bundled files extracted" -ForegroundColor Green
-    }
-    break
-}
+# --- Note: Manual extraction required ---
+# If you downloaded a Touchline-FM26-Installer.zip file, please extract it manually
+# before running this installer. The installer expects files to be already extracted.
 
 # --- Version Configuration ---
 $BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
 $TouchlineReleasesApi = "https://api.github.com/repos/MadnessInnsmouth/psychic-chainsaw/releases/latest"
-# Tolk DLLs are bundled in this project's GitHub release as tolk-x64.zip.
+# Tolk DLLs should be provided in an extracted tolk-x64 folder alongside the installer.
 # Fallback: download companion DLLs individually from the dkager/tolk repository.
 $TolkRawBase = "https://raw.githubusercontent.com/dkager/tolk/master/libs/x64"
 
@@ -460,59 +446,14 @@ if (Test-Path $tolkDll) {
         }
     }
 
-    # --- Strategy 2: Download tolk-x64.zip from this project's GitHub release ---
-    if (-not $tolkInstalled) {
-        Write-Host "   Checking Touchline release for Tolk bundle..." -ForegroundColor White
-        try {
-            $releaseInfo = Invoke-RestMethod -Uri $TouchlineReleasesApi -UseBasicParsing -ErrorAction Stop
-            $tolkAsset = $releaseInfo.assets | Where-Object { $_.name -eq "tolk-x64.zip" } | Select-Object -First 1
-            if ($tolkAsset) {
-                $tolkZip = Join-Path $env:TEMP "tolk_fm26.zip"
-                Invoke-WebRequest -Uri $tolkAsset.browser_download_url -OutFile $tolkZip -UseBasicParsing
-                $tolkExtract = Join-Path $env:TEMP "tolk_extract"
-                if (Test-Path $tolkExtract) { Remove-Item $tolkExtract -Recurse -Force }
-                Expand-Archive -Path $tolkZip -DestinationPath $tolkExtract -Force
-
-                $tolkSrc = Get-ChildItem "$tolkExtract" -Recurse -Filter "Tolk.dll" |
-                    Where-Object { $_.DirectoryName -match "x64|64" } |
-                    Select-Object -First 1
-                if (-not $tolkSrc) {
-                    $tolkSrc = Get-ChildItem "$tolkExtract" -Recurse -Filter "Tolk.dll" | Select-Object -First 1
-                }
-
-                if ($tolkSrc) {
-                    $tolkDir = $tolkSrc.DirectoryName
-                    $companionDlls = Get-ChildItem "$tolkDir\*.dll" -ErrorAction SilentlyContinue
-                    foreach ($dll in $companionDlls) {
-                        Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force
-                    }
-                    Write-Ok "Tolk installed from release (with screen reader libraries)"
-                    $tolkInstalled = $true
-                }
-
-                Remove-Item $tolkZip -ErrorAction SilentlyContinue
-                Remove-Item $tolkExtract -Recurse -ErrorAction SilentlyContinue
-            }
-        } catch {
-            Write-Host "   Release not available, trying other methods..." -ForegroundColor Gray
-        }
-    }
+    # --- Strategy 2: Skip automatic download/extraction of tolk-x64.zip ---
+    # Users should manually extract tolk-x64 folder if they have the zip file
 
     # --- Strategy 3: Check for local Tolk DLLs bundled with the installer ---
     if (-not $tolkInstalled) {
-        # Check for extracted tolk-x64 directory
+        # Check for extracted tolk-x64 directory (must be manually extracted by user)
         $localTolkDir = Join-Path $ScriptDir "tolk-x64"
         $localTolkDll = Join-Path $localTolkDir "Tolk.dll"
-
-        # Check for tolk-x64.zip alongside the installer
-        $localTolkZip = Join-Path $ScriptDir "tolk-x64.zip"
-        if ((-not (Test-Path $localTolkDll)) -and (Test-Path $localTolkZip)) {
-            Write-Host "   Extracting local tolk-x64.zip..." -ForegroundColor White
-            if (-not (Test-Path $localTolkDir)) {
-                New-Item -ItemType Directory -Path $localTolkDir -Force | Out-Null
-            }
-            Expand-Archive -Path $localTolkZip -DestinationPath $localTolkDir -Force
-        }
 
         if (Test-Path $localTolkDll) {
             Write-Host "   Installing Tolk from local bundle..." -ForegroundColor White

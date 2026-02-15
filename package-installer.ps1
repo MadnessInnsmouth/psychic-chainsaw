@@ -67,27 +67,23 @@ if (-not $modDllFound) {
     Write-Host "   [!] TouchlineMod.dll not found - users will need to download from release" -ForegroundColor Yellow
 }
 
-# Copy tolk-x64 directory or zip if available
+# Copy tolk-x64 directory if available
 Write-Host ""
 Write-Host "   [3/5] Looking for Tolk libraries..." -ForegroundColor White
-$tolkZip = Join-Path $scriptDir "tolk-x64.zip"
 $tolkDir = Join-Path $scriptDir "tolk-x64"
 
 $tolkFound = $false
-if (Test-Path $tolkZip) {
-    Copy-Item $tolkZip -Destination $outputDir -Force
-    Write-Host "   [OK] tolk-x64.zip copied" -ForegroundColor Green
-    $tolkFound = $true
-} elseif (Test-Path $tolkDir) {
-    # Create zip from directory
-    $destZip = Join-Path $outputDir "tolk-x64.zip"
-    Compress-Archive -Path "$tolkDir\*" -DestinationPath $destZip -Force
-    Write-Host "   [OK] tolk-x64.zip created from directory" -ForegroundColor Green
+if (Test-Path $tolkDir) {
+    # Copy the entire directory
+    $destTolkDir = Join-Path $outputDir "tolk-x64"
+    Copy-Item $tolkDir -Destination $destTolkDir -Recurse -Force
+    Write-Host "   [OK] tolk-x64 directory copied" -ForegroundColor Green
     $tolkFound = $true
 }
 
 if (-not $tolkFound) {
     Write-Host "   [!] Tolk libraries not found - users will need to download from release" -ForegroundColor Yellow
+    Write-Host "       Note: Users should extract tolk-x64 folder before running installer" -ForegroundColor Gray
 }
 
 # Copy BepInEx zip if available (optional)
@@ -113,7 +109,9 @@ $readmeContent = @"
 
 ## Quick Start
 
-1. Extract this ZIP to any location on your computer
+1. **IMPORTANT**: Extract this entire ZIP to any location on your computer
+   - Make sure to extract ALL files, not just install.bat
+   - If tolk-x64.zip is included, extract it to create a tolk-x64 folder
 2. Double-click **install.bat**
 3. Follow the on-screen instructions
 
@@ -122,7 +120,8 @@ $readmeContent = @"
 This installer package contains:
 - **install.bat** / **install.ps1** - Automated installation scripts
 - **TouchlineMod.dll** - The accessibility mod (if pre-built)
-- **tolk-x64.zip** - Screen reader integration library (if bundled)
+- **tolk-x64** folder or **tolk-x64.zip** - Screen reader integration library (if bundled)
+  - If you have tolk-x64.zip, extract it before running the installer
 - **BepInEx package** - Mod framework (if bundled)
 
 ## Installation Process
@@ -135,7 +134,7 @@ The installer will:
 
 ## Offline Installation
 
-This installer can work **completely offline** if all dependencies are bundled.
+This installer can work **completely offline** if all dependencies are bundled and extracted.
 If files are not included in this package, the installer will:
 1. First search your computer for existing installations
 2. Download missing files from the internet if needed
