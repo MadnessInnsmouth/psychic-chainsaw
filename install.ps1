@@ -35,7 +35,7 @@ if (Test-Path $TranscriptFile) {
 
 # Start transcript to capture ALL console output
 try {
-    Start-Transcript -Path $TranscriptFile
+    Start-Transcript -Path $TranscriptFile -Append:$false
 } catch {
     # If transcript can't start (e.g., permissions), log a warning and continue
     Write-Log "Warning: Could not start transcript logging: $($_.Exception.Message)" "WARN"
@@ -84,10 +84,8 @@ function Stop-And-Merge-Transcript {
             Add-Content -Path $LogFile -Value "`n`n============================================================`n"
             Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
             Add-Content -Path $LogFile -Value "============================================================`n"
-            # Use -ReadCount to process file in batches for memory efficiency
-            Get-Content $TranscriptFile -ReadCount 100 -ErrorAction Stop | ForEach-Object { 
-                $_ | Add-Content -Path $LogFile 
-            }
+            # Stream content directly for efficient processing
+            Get-Content $TranscriptFile -ErrorAction Stop | Add-Content -Path $LogFile
             Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
         } catch {
             # If merge fails, log the error but continue
