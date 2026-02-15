@@ -226,7 +226,7 @@ if (-not $FM26Path) {
         exit 1
     }
     # Verify this is actually the FM26 folder by checking for game executable
-    $testExe = Get-ChildItem "$FM26Path\*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Football Manager*" -or $_.Name -like "fm.exe" } | Select-Object -First 1
+    $testExe = @(Get-ChildItem "$FM26Path\*.exe" -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Football Manager*" -or $_.Name -like "fm.exe" }) | Select-Object -First 1
     if (-not $testExe) {
         Write-Err "No Football Manager executable found in: $FM26Path"
         Write-Host "   Please check the path and try again."
@@ -365,13 +365,6 @@ if ((Test-Path $interopDir) -and (@(Get-ChildItem "$interopDir\*.dll" -ErrorActi
 
             try {
                 $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru -ErrorAction Stop
-                if (-not $gameProcess) {
-                    Write-Err "Failed to start game process. The game may not have proper permissions or the executable is invalid."
-                    if ($attempt -lt $maxAttempts) {
-                        Write-Host "   Will retry..." -ForegroundColor Yellow
-                    }
-                    continue
-                }
                 Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
             } catch {
                 Write-Err "Failed to start game: $($_.Exception.Message)"
