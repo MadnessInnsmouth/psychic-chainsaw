@@ -120,8 +120,8 @@ $readmeContent = @"
 This installer package contains:
 - **install.bat** / **install.ps1** - Automated installation scripts
 - **TouchlineMod.dll** - The accessibility mod (if pre-built)
-- **tolk-x64** folder or **tolk-x64.zip** - Screen reader integration library (if bundled)
-  - If you have tolk-x64.zip, extract it before running the installer
+- **tolk-x64** folder - Screen reader integration library (if bundled)
+  - Must be extracted before running the installer
 - **BepInEx package** - Mod framework (if bundled)
 
 ## Installation Process

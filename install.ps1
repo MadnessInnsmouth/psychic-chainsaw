@@ -446,10 +446,8 @@ if (Test-Path $tolkDll) {
         }
     }
 
-    # --- Strategy 2: Skip automatic download/extraction of tolk-x64.zip ---
+    # --- Strategy 2: Check for local Tolk DLLs bundled with the installer ---
     # Users should manually extract tolk-x64 folder if they have the zip file
-
-    # --- Strategy 3: Check for local Tolk DLLs bundled with the installer ---
     if (-not $tolkInstalled) {
         # Check for extracted tolk-x64 directory (must be manually extracted by user)
         $localTolkDir = Join-Path $ScriptDir "tolk-x64"
