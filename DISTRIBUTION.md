@@ -97,9 +97,10 @@ This guide explains the different ways to distribute the Touchline mod installer
 1. **Create packages:**
    ```powershell
    # Online-only installer (small)
-   Copy-Item install.bat Touchline-Online\
-   Copy-Item install.ps1 Touchline-Online\
-   Compress-Archive Touchline-Online\* Touchline-FM26-Installer-Online.zip
+   New-Item -ItemType Directory -Path Touchline-Online -Force | Out-Null
+   Copy-Item install.bat Touchline-Online\ -Force
+   Copy-Item install.ps1 Touchline-Online\ -Force
+   Compress-Archive Touchline-Online\* Touchline-FM26-Installer-Online.zip -Force
    
    # Complete offline installer (medium)
    .\package-installer.ps1

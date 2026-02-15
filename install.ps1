@@ -18,6 +18,9 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"  # Speed up Invoke-WebRequest
 
+# --- Script Configuration ---
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
 # --- Version Configuration ---
 $BepInExVersion = "6.0.0-pre.2"
 $BepInExUrl = "https://github.com/BepInEx/BepInEx/releases/download/v$BepInExVersion/BepInEx-Unity.IL2CPP-win-x64-$BepInExVersion.zip"
@@ -47,12 +50,11 @@ function Find-DllOnSystem {
     $searchPaths = @()
     
     # Current directory and subdirectories
-    $scriptDir = Split-Path -Parent $MyInvocation.PSCommandPath
-    if ($scriptDir) {
-        $searchPaths += $scriptDir
-        $searchPaths += Join-Path $scriptDir "libs"
-        $searchPaths += Join-Path $scriptDir "tolk-x64"
-        $searchPaths += Join-Path $scriptDir "BepInEx"
+    if ($ScriptDir) {
+        $searchPaths += $ScriptDir
+        $searchPaths += Join-Path $ScriptDir "libs"
+        $searchPaths += Join-Path $ScriptDir "tolk-x64"
+        $searchPaths += Join-Path $ScriptDir "BepInEx"
     }
     
     # User's Downloads folder
@@ -292,9 +294,8 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
     
     # --- Strategy 2: Look for BepInEx zip file locally ---
     if (-not $bepInExInstalled) {
-        $scriptDir = Split-Path -Parent $MyInvocation.PSCommandPath
         $localZips = @(
-            (Join-Path $scriptDir "BepInEx-Unity.IL2CPP-win-x64*.zip"),
+            (Join-Path $ScriptDir "BepInEx-Unity.IL2CPP-win-x64*.zip"),
             "$env:USERPROFILE\Downloads\BepInEx-Unity.IL2CPP-win-x64*.zip"
         )
         
@@ -349,7 +350,7 @@ if ((Test-Path $bepInExCoreDll) -and (Test-Path $bepInExDoorStop)) {
                 Write-Host "   Please download it manually from:" -ForegroundColor Yellow
                 Write-Host "   https://github.com/BepInEx/BepInEx/releases" -ForegroundColor Yellow
                 Write-Host "   Extract it into: $FM26Path" -ForegroundColor Yellow
-                Write-Host "   Or place the BepInEx zip in: $scriptDir" -ForegroundColor Yellow
+                Write-Host "   Or place the BepInEx zip in: $ScriptDir" -ForegroundColor Yellow
                 Write-Host "   Then re-run this installer." -ForegroundColor Yellow
             }
         }
@@ -462,14 +463,12 @@ if (Test-Path $tolkDll) {
 
     # --- Strategy 3: Check for local Tolk DLLs bundled with the installer ---
     if (-not $tolkInstalled) {
-        $scriptDir = $PSScriptRoot
-
         # Check for extracted tolk-x64 directory
-        $localTolkDir = Join-Path $scriptDir "tolk-x64"
+        $localTolkDir = Join-Path $ScriptDir "tolk-x64"
         $localTolkDll = Join-Path $localTolkDir "Tolk.dll"
 
         # Check for tolk-x64.zip alongside the installer
-        $localTolkZip = Join-Path $scriptDir "tolk-x64.zip"
+        $localTolkZip = Join-Path $ScriptDir "tolk-x64.zip"
         if ((-not (Test-Path $localTolkDll)) -and (Test-Path $localTolkZip)) {
             Write-Host "   Extracting local tolk-x64.zip..." -ForegroundColor White
             if (-not (Test-Path $localTolkDir)) {
@@ -520,6 +519,7 @@ if (Test-Path $tolkDll) {
 Write-Step "Installing Touchline accessibility mod..."
 
 $modDll = Join-Path $pluginDir "TouchlineMod.dll"
+$downloadedMod = $false
 
 # --- Strategy 1: Search for TouchlineMod.dll on local system ---
 if (-not (Test-Path $modDll)) {
@@ -533,8 +533,7 @@ if (-not (Test-Path $modDll)) {
 }
 
 # --- Strategy 2: Try to download latest release from GitHub ---
-$downloadedMod = $false
-if (-not (Test-Path $modDll)) {
+if (-not $downloadedMod -and -not (Test-Path $modDll)) {
     try {
         Write-Host "   Checking for latest release..." -ForegroundColor White
         $releaseInfo = Invoke-RestMethod -Uri $TouchlineReleasesApi -UseBasicParsing -ErrorAction Stop
@@ -551,9 +550,8 @@ if (-not (Test-Path $modDll)) {
 
 # --- Strategy 3: Check for locally-built DLL ---
 if (-not $downloadedMod -and -not (Test-Path $modDll)) {
-    $scriptDir = Split-Path -Parent $MyInvocation.PSCommandPath
-    $localBuild = Join-Path $scriptDir "src\TouchlineMod\bin\Release\net6.0\TouchlineMod.dll"
-    $localBuildDebug = Join-Path $scriptDir "src\TouchlineMod\bin\Debug\net6.0\TouchlineMod.dll"
+    $localBuild = Join-Path $ScriptDir "src\TouchlineMod\bin\Release\net6.0\TouchlineMod.dll"
+    $localBuildDebug = Join-Path $ScriptDir "src\TouchlineMod\bin\Debug\net6.0\TouchlineMod.dll"
 
     if (Test-Path $localBuild) {
         Copy-Item $localBuild -Destination $modDll -Force
