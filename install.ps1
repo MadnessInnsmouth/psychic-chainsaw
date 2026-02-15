@@ -388,8 +388,9 @@ if (Test-Path $tolkDll) {
     $tolkInstalled = $false
 
     # Check for extracted tolk-x64 directory in the installer folder
+    # (may come pre-extracted in release package, or auto-extracted from zip above)
     $localTolkDll = Join-Path $tolkDir "Tolk.dll"
-    if (Test-Path $localTolkDll) {
+    if ((Test-Path $tolkDir) -and (Test-Path $localTolkDll)) {
         Write-Host "   Installing Tolk from bundled files..." -ForegroundColor White
         $tolkDlls = Get-ChildItem "$tolkDir\*.dll" -ErrorAction SilentlyContinue
         foreach ($dll in $tolkDlls) {

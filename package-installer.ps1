@@ -96,7 +96,7 @@ if (-not $tolkFound) {
 }
 
 if (-not $tolkFound) {
-    Write-Host "   [!] Tolk libraries not found - users will need to download from release" -ForegroundColor Yellow
+    Write-Host "   [!] Tolk libraries not found - download the complete installer from releases" -ForegroundColor Yellow
 }
 
 # Copy BepInEx zip if available (optional)
