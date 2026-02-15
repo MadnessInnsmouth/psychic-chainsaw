@@ -234,8 +234,14 @@ if (Test-Path $tolkDll) {
         }
 
         if ($tolkSrc) {
-            Copy-Item $tolkSrc.FullName -Destination $tolkDll -Force
-            Write-Ok "Tolk installed"
+            # Copy Tolk.dll and all companion DLLs (e.g. nvdaControllerClient64.dll)
+            # from the same directory — Tolk needs these to communicate with screen readers
+            $tolkDir = $tolkSrc.DirectoryName
+            $companionDlls = Get-ChildItem "$tolkDir\*.dll" -ErrorAction SilentlyContinue
+            foreach ($dll in $companionDlls) {
+                Copy-Item $dll.FullName -Destination (Join-Path $pluginDir $dll.Name) -Force
+            }
+            Write-Ok "Tolk installed (with screen reader libraries)"
         } else {
             Write-Warn "Could not find Tolk.dll in the archive."
         }
@@ -312,6 +318,13 @@ if (Test-Path $tolkDll) {
 } else {
     Write-Err "Tolk: NOT FOUND"
     $allGood = $false
+}
+
+$nvdaDll = Join-Path $pluginDir "nvdaControllerClient64.dll"
+if (Test-Path $nvdaDll) {
+    Write-Ok "NVDA controller: Installed"
+} else {
+    Write-Warn "NVDA controller: NOT FOUND (NVDA support may not work)"
 }
 
 if (Test-Path $modDll) {
