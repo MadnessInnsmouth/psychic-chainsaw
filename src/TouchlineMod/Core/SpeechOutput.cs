@@ -89,6 +89,8 @@ namespace TouchlineMod.Core
                 }
 
                 // Register cleanup on process exit to ensure proper resource cleanup
+                // Note: ProcessExit handlers are intentionally not unregistered as they persist
+                // for the lifetime of the AppDomain, ensuring cleanup even if Shutdown() isn't called.
                 AppDomain.CurrentDomain.ProcessExit += (sender, args) => CleanupTolkLibrary();
             }
             catch (Exception ex)
@@ -101,6 +103,7 @@ namespace TouchlineMod.Core
 
         /// <summary>
         /// Clean up the manually loaded Tolk library handle.
+        /// This method is safe to call multiple times (e.g., from both Shutdown() and ProcessExit).
         /// </summary>
         private static void CleanupTolkLibrary()
         {
@@ -364,6 +367,7 @@ namespace TouchlineMod.Core
                 _sapiAvailable = false;
             }
 
+            // Explicitly cleanup Tolk library (also registered with ProcessExit for redundancy)
             CleanupTolkLibrary();
             _initialized = false;
         }
