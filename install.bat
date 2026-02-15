@@ -28,7 +28,7 @@ powershell -ExecutionPolicy Bypass -File "%~dp0install.ps1" 2>&1
 set INSTALLER_EXIT_CODE=%ERRORLEVEL%
 
 echo.
-if %INSTALLER_EXIT_CODE% neq 0 (
+if "%INSTALLER_EXIT_CODE%" neq "0" (
     echo Installation completed with errors. Exit code: %INSTALLER_EXIT_CODE%
     echo Check touchline-installer.log for details.
     echo.

@@ -63,19 +63,19 @@ function Write-Log {
 function Stop-And-Merge-Transcript {
     # Safely stop transcript and merge it into the main log file
     try {
-        Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+        Stop-Transcript | Out-Null
     } catch {
-        # Transcript wasn't running, ignore
+        # Transcript wasn't running or already stopped, ignore
     }
     
     # Merge transcript into the main log file
     if (Test-Path $TranscriptFile) {
         try {
-            $transcriptContent = Get-Content $TranscriptFile -Raw
+            # Read transcript content in chunks to avoid memory issues with large files
             Add-Content -Path $LogFile -Value "`n`n============================================================`n"
             Add-Content -Path $LogFile -Value "FULL CONSOLE OUTPUT (Transcript)`n"
             Add-Content -Path $LogFile -Value "============================================================`n"
-            Add-Content -Path $LogFile -Value $transcriptContent
+            Get-Content $TranscriptFile | Add-Content -Path $LogFile
             Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
         } catch {
             # If merge fails, log the error but continue
