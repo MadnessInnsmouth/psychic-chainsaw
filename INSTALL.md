@@ -52,12 +52,15 @@ If you prefer to install manually, follow these steps:
 
 ## Step 2: Install Tolk (Screen Reader Library)
 
-1. Download Tolk from: https://github.com/dkager/tolk/releases
-2. Extract `Tolk.dll` (the **x64** version) from the archive.
-3. Place `Tolk.dll` in:
+1. Download `tolk-x64.zip` from this project's [Releases page](../../releases) (it is bundled with each release).
+2. Extract the DLLs (`Tolk.dll`, `nvdaControllerClient64.dll`, `SAAPI64.dll`) from the archive.
+3. Place them in:
    ```
-   <FM26 folder>\BepInEx\plugins\TouchlineMod\Tolk.dll
+   <FM26 folder>\BepInEx\plugins\TouchlineMod\
    ```
+
+> **Note**: The upstream Tolk repository (https://github.com/dkager/tolk) does not publish
+> pre-built releases. Touchline builds Tolk from source and bundles it automatically.
 
 ## Step 3: Install Touchline
 

@@ -26,7 +26,7 @@ Touchline hooks into FM26's Unity-based UI to provide real-time screen reader ou
 - Football Manager 26 (Unity IL2CPP) — **Steam, Epic Games, or Xbox Game Pass** editions are all supported
 - [BepInEx 6.x for Unity IL2CPP](https://github.com/BepInEx/BepInEx)
 - [NVDA](https://www.nvaccess.org/) or JAWS screen reader
-- [Tolk](https://github.com/dkager/tolk/releases) screen reader library
+- [Tolk](https://github.com/dkager/tolk) screen reader library (bundled with [releases](../../releases))
 
 ## Quick Start
 
