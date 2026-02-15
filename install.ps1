@@ -328,6 +328,14 @@ $interopDir = Join-Path $FM26Path "BepInEx\interop"
 if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
     Write-Ok "Interop assemblies already generated"
 } else {
+    # Verify that the BepInEx doorstop (winhttp.dll) is in place — without it
+    # BepInEx cannot bootstrap and interop generation will silently fail.
+    $doorstopDll = Join-Path $FM26Path "winhttp.dll"
+    if (-not (Test-Path $doorstopDll)) {
+        Write-Warn "winhttp.dll (BepInEx doorstop) is missing from the game folder."
+        Write-Host "   BepInEx cannot start without it. Please re-install BepInEx and try again." -ForegroundColor Yellow
+    }
+
     Write-Host "   BepInEx needs to run once to generate interop assemblies." -ForegroundColor White
     Write-Host "   The game will launch, generate files, and may close on its own." -ForegroundColor White
     Write-Host "   NOTE: It is normal for the game to start and then shut down automatically" -ForegroundColor Yellow
@@ -337,31 +345,56 @@ if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction
 
     $gameExe = Get-ChildItem "$FM26Path\*.exe" | Where-Object { $_.Name -notlike "Unins*" -and $_.Name -notlike "crash*" } | Select-Object -First 1
     if ($gameExe) {
-        Write-Host "   Press Enter to launch FM26..." -ForegroundColor Yellow
-        Read-Host
+        $maxAttempts = 2
+        for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            if ($attempt -gt 1) {
+                Write-Host ""
+                Write-Host "   Retrying interop generation (attempt $attempt of $maxAttempts)..." -ForegroundColor Yellow
+            }
 
-        $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru
-        Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
-        Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
+            Write-Host "   Press Enter to launch FM26..." -ForegroundColor Yellow
+            Read-Host
 
-        # Wait up to 2 minutes (120000ms) for the game process to exit
-        $exited = $gameProcess.WaitForExit(120000)
-        if (-not $exited) {
-            Write-Host "   Game is still running. Please close it when ready." -ForegroundColor Yellow
-            Read-Host "   Press Enter after you've closed the game"
-        } else {
-            Write-Host "   Game process has exited." -ForegroundColor Gray
-            # Give BepInEx a moment to finish writing interop files
-            Start-Sleep -Seconds 3
-        }
+            $gameProcess = Start-Process $gameExe.FullName -WorkingDirectory $FM26Path -PassThru
+            Write-Host "   Game launched (PID: $($gameProcess.Id)). Waiting for interop generation..." -ForegroundColor Gray
+            Write-Host "   This may take 30-60 seconds. The game will likely close on its own." -ForegroundColor Gray
 
-        # Verify interop assemblies were generated
-        if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
-            Write-Ok "Interop assemblies generated successfully"
-        } else {
-            Write-Warn "Interop assemblies not found after game run."
-            Write-Host "   This can happen if BepInEx didn't fully initialise." -ForegroundColor Yellow
-            Write-Host "   Try launching FM26 once more from Steam, let it close, then re-run this installer." -ForegroundColor Yellow
+            # Wait up to 2 minutes (120000ms) for the game process to exit
+            $exited = $gameProcess.WaitForExit(120000)
+            if (-not $exited) {
+                Write-Host "   Game is still running. Please close it when ready." -ForegroundColor Yellow
+                Read-Host "   Press Enter after you've closed the game"
+            } else {
+                Write-Host "   Game process has exited." -ForegroundColor Gray
+                # BepInEx writes interop assemblies asynchronously after the game
+                # process exits; allow enough time for disk I/O to complete.
+                Start-Sleep -Seconds 5
+            }
+
+            # Check whether BepInEx actually ran by looking for its log file
+            $bepLogFile = Join-Path $FM26Path "BepInEx\LogOutput.log"
+            if (-not (Test-Path $bepLogFile)) {
+                Write-Warn "BepInEx log file not found — BepInEx may not have loaded."
+                Write-Host "   Ensure winhttp.dll is in the game folder alongside the game .exe." -ForegroundColor Yellow
+            }
+
+            # Verify interop assemblies were generated
+            if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+                Write-Ok "Interop assemblies generated successfully"
+                break
+            } else {
+                if ($attempt -lt $maxAttempts) {
+                    Write-Warn "Interop assemblies not found after game run."
+                    Write-Host "   BepInEx may need one more launch to finish generating them." -ForegroundColor Yellow
+                } else {
+                    Write-Warn "Interop assemblies not found after $maxAttempts attempts."
+                    Write-Host "   This can happen if BepInEx didn't fully initialise." -ForegroundColor Yellow
+                    Write-Host "   Try launching FM26 once more from Steam, let it close, then re-run this installer." -ForegroundColor Yellow
+                    if (Test-Path $bepLogFile) {
+                        Write-Host "   Check $bepLogFile for errors." -ForegroundColor Yellow
+                    }
+                }
+            }
         }
     } else {
         Write-Warn "Could not find game executable. Please run FM26 once manually, then re-run this installer."
@@ -495,6 +528,31 @@ if (Test-Path $tolkDll) {
     }
 }
 
+# Ensure NVDA/JAWS companion DLLs are present alongside Tolk.dll.
+# These can be missed if Tolk was installed from a source that only contained Tolk.dll.
+if (Test-Path $tolkDll) {
+    $requiredCompanions = @("nvdaControllerClient64.dll", "SAAPI64.dll")
+    foreach ($companion in $requiredCompanions) {
+        $companionPath = Join-Path $pluginDir $companion
+        if (-not (Test-Path $companionPath)) {
+            # Try to find it in the installer directory
+            $found = Find-DllOnSystem -DllName $companion
+            if ($found) {
+                Copy-Item $found -Destination $companionPath -Force
+                Write-Ok "Copied missing $companion to plugin folder"
+            } else {
+                # Try downloading from dkager/tolk repository
+                try {
+                    Invoke-WebRequest -Uri "$TolkRawBase/$companion" -OutFile $companionPath -UseBasicParsing
+                    Write-Ok "Downloaded missing $companion"
+                } catch {
+                    Write-Warn "$companion not found — screen reader support for this backend may not work."
+                }
+            }
+        }
+    }
+}
+
 # ============================================================
 # Step 5: Install TouchlineMod.dll
 # ============================================================
@@ -567,6 +625,14 @@ if (Test-Path $bepInExCoreDll) {
     $allGood = $false
 }
 
+$interopDir = Join-Path $FM26Path "BepInEx\interop"
+if ((Test-Path $interopDir) -and (Get-ChildItem "$interopDir\*.dll" -ErrorAction SilentlyContinue).Count -gt 0) {
+    Write-Ok "Interop assemblies: Generated"
+} else {
+    Write-Warn "Interop assemblies: NOT FOUND"
+    Write-Host "   Launch the game once to generate them — the game will exit automatically on the first run." -ForegroundColor Yellow
+}
+
 if (Test-Path $tolkDll) {
     Write-Ok "Tolk: Installed"
 } else {
@@ -579,6 +645,14 @@ if (Test-Path $nvdaDll) {
     Write-Ok "NVDA controller: Installed"
 } else {
     Write-Warn "NVDA controller: NOT FOUND (NVDA support may not work)"
+    Write-Host "   nvdaControllerClient64.dll must be in: $pluginDir" -ForegroundColor Yellow
+    Write-Host "   It should have been installed alongside Tolk.dll." -ForegroundColor Yellow
+    # Attempt to locate and copy the missing DLL as a recovery step
+    $nvdaFound = Find-DllOnSystem -DllName "nvdaControllerClient64.dll"
+    if ($nvdaFound) {
+        Copy-Item $nvdaFound -Destination (Join-Path $pluginDir "nvdaControllerClient64.dll") -Force
+        Write-Ok "NVDA controller: Recovered from $nvdaFound"
+    }
 }
 
 if (Test-Path $modDll) {
