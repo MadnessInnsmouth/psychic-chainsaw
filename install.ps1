@@ -80,8 +80,15 @@ function Stop-And-Merge-Transcript {
     # Merge transcript into the main log file
     if (Test-Path $TranscriptFile) {
         try {
-            # Add section header as single write operation
-            Add-Content -Path $LogFile -Value ("`n`n============================================================`nFULL CONSOLE OUTPUT (Transcript)`n============================================================")
+            # Add section header
+            $header = @"
+
+
+============================================================
+FULL CONSOLE OUTPUT (Transcript)
+============================================================
+"@
+            Add-Content -Path $LogFile -Value $header
             # Stream transcript content efficiently
             Get-Content $TranscriptFile -ErrorAction Stop | Add-Content -Path $LogFile
             Remove-Item $TranscriptFile -Force -ErrorAction SilentlyContinue
